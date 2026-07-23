@@ -1,0 +1,24 @@
+-- CreateTable
+CREATE TABLE "Repository" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "lang" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "score" INTEGER NOT NULL,
+    "scoreColor" TEXT NOT NULL,
+    "isScanning" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Scan" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "repoId" INTEGER NOT NULL,
+    "critical" INTEGER NOT NULL DEFAULT 0,
+    "high" INTEGER NOT NULL DEFAULT 0,
+    "secrets" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'completed',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Scan_repoId_fkey" FOREIGN KEY ("repoId") REFERENCES "Repository" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

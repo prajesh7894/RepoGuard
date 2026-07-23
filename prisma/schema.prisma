@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Repository {
+  id         Int      @id @default(autoincrement())
+  name       String
+  url        String?
+  lang       String
+  status     String
+  score      Int
+  scoreColor String
+  isScanning Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  scans      Scan[]
+}
+
+model Scan {
+  id             Int        @id @default(autoincrement())
+  repoId         Int
+  repository     Repository @relation(fields: [repoId], references: [id])
+  critical       Int        @default(0)
+  high           Int        @default(0)
+  secrets        Int        @default(0)
+  status         String     @default("completed")
+  findingsDetail String?    // JSON string of detailed findings
+  createdAt      DateTime   @default(now())
+}

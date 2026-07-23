@@ -1,0 +1,1 @@
+export type View = 'landing' | 'dashboard' | 'repositories' | 'new_scan' | 'scan_history' | 'ai_security_review' | 'secret_scanner' | 'dependency_scanner' | 'notifications' | 'settings' | 'help' | 'reports' | 'integrations' | 'team' | 'product' | 'solutions' | 'pricing' | 'docs';

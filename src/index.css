@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-error-container: #93000a;
+  --color-inverse-on-surface: #263143;
+  --color-primary-container: #2563eb;
+  --color-on-primary: #002a78;
+  --color-on-primary-fixed-variant: #003ea8;
+  --color-on-tertiary-fixed-variant: #5516be;
+  --color-on-primary-fixed: #00174b;
+  --color-outline: #8d90a0;
+  --color-surface-bright: #2f3a4c;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-tertiary: #3c0091;
+  --color-surface-variant: #2a3548;
+  --color-on-tertiary-container: #f6edff;
+  --color-surface-container-highest: #2a3548;
+  --color-on-secondary: #003640;
+  --color-tertiary: #d0bcff;
+  --color-primary: #b4c5ff;
+  --color-secondary: #4cd7f6;
+  --color-tertiary-fixed-dim: #d0bcff;
+  --color-on-error-container: #ffdad6;
+  --color-surface-container-lowest: #040e1f;
+  --color-outline-variant: #434655;
+  --color-background: #081425;
+  --color-on-surface: #d8e3fb;
+  --color-surface-container: #152031;
+  --color-inverse-surface: #d8e3fb;
+  --color-secondary-fixed-dim: #4cd7f6;
+  --color-error: #ffb4ab;
+  --color-on-tertiary-fixed: #23005c;
+  --color-secondary-container: #03b5d3;
+  --color-tertiary-fixed: #e9ddff;
+  --color-tertiary-container: #7d4ce7;
+  --color-surface-dim: #081425;
+  --color-surface-container-high: #1f2a3c;
+  --color-on-secondary-fixed-variant: #004e5c;
+  --color-secondary-fixed: #acedff;
+  --color-surface: #081425;
+  --color-on-surface-variant: #c3c6d7;
+  --color-on-secondary-fixed: #001f26;
+  --color-on-primary-container: #eeefff;
+  --color-on-secondary-container: #00424e;
+  --color-inverse-primary: #0053db;
+  --color-on-error: #690005;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-surface-container-low: #111c2d;
+  --color-surface-tint: #b4c5ff;
+  --color-on-background: #d8e3fb;
+
+  --spacing-container-padding-desktop: 32px;
+  --spacing-container-padding-mobile: 16px;
+  --spacing-stack-lg: 24px;
+  --spacing-stack-md: 16px;
+  --spacing-gutter: 24px;
+  --spacing-unit: 4px;
+  --spacing-stack-sm: 8px;
+
+  --font-display-lg: "Geist", sans-serif;
+  --font-body-sm: "Geist", sans-serif;
+  --font-headline-lg-mobile: "Geist", sans-serif;
+  --font-headline-lg: "Geist", sans-serif;
+  --font-body-lg: "Geist", sans-serif;
+  --font-label-caps: "Geist", sans-serif;
+  --font-title-md: "Geist", sans-serif;
+  --font-code-sm: "JetBrains Mono", monospace;
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--font-weight: 700;
+  --text-display-lg--letter-spacing: -0.02em;
+
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.5;
+  --text-body-sm--font-weight: 400;
+
+  --text-headline-lg-mobile: 24px;
+  --text-headline-lg-mobile--line-height: 1.2;
+  --text-headline-lg-mobile--font-weight: 600;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 1.2;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.6;
+  --text-body-lg--font-weight: 400;
+
+  --text-label-caps: 12px;
+  --text-label-caps--line-height: 1;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 600;
+
+  --text-title-md: 20px;
+  --text-title-md--line-height: 1.4;
+  --text-title-md--font-weight: 500;
+
+  --text-code-sm: 13px;
+  --text-code-sm--line-height: 1.6;
+  --text-code-sm--font-weight: 400;
+}
+
+[data-theme="emerald"] {
+  --color-primary-container: #059669;
+  --color-primary: #a7f3d0;
+  --color-secondary: #fde047;
+  --color-secondary-container: #eab308;
+}
+
+[data-theme="purple"] {
+  --color-primary-container: #9333ea;
+  --color-primary: #e9d5ff;
+  --color-secondary: #f9a8d4;
+  --color-secondary-container: #db2777;
+}
+
+[data-theme="rose"] {
+  --color-primary-container: #e11d48;
+  --color-primary: #fecdd3;
+  --color-secondary: #fed7aa;
+  --color-secondary-container: #f97316;
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-on-background);
+    font-family: 'Geist', sans-serif;
+    overflow-x: hidden;
+    color-scheme: dark;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-container-highest);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-outline-variant);
+}
+
+.glass-panel {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: color-mix(in srgb, var(--color-primary-container) 20%, transparent);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--color-secondary) 30%, transparent);
+    box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--color-secondary) 15%, transparent);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw;
+    height: 80vh;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-primary-container) 15%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.code-block {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+.surface-1 {
+    background-color: #1E293B;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.surface-2 {
+    background-color: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.glow-critical { box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); }
+.glow-high { box-shadow: 0 0 20px rgba(249, 115, 22, 0.15); }
+.glow-medium { box-shadow: 0 0 20px rgba(234, 179, 8, 0.15); }
+.glow-low { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
+
+.score-circle {
+    transition: stroke-dasharray 1s ease-in-out;
+}
+
+.text-critical { color: #f87171; }
+.text-warning { color: #fbbf24; }
+.text-success { color: #4ade80; }
+
+.bg-critical-subtle { background-color: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); }
+.bg-warning-subtle { background-color: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); }
+.bg-success-subtle { background-color: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); }
+
+.shadow-critical-glow { box-shadow: 0 4px 20px -2px rgba(248, 113, 113, 0.15); }
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: var(--color-primary-container);
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: var(--color-primary-container);
+}
+
+.input-glow:focus {
+    border-color: var(--color-primary-container);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-container) 30%, transparent);
+}
