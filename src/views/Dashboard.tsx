@@ -1,17 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
-
-const vulnerabilityData = [
-  { name: 'Mon', critical: 12, resolved: 8 },
-  { name: 'Tue', critical: 15, resolved: 10 },
-  { name: 'Wed', critical: 8, resolved: 14 },
-  { name: 'Thu', critical: 5, resolved: 18 },
-  { name: 'Fri', critical: 4, resolved: 22 },
-  { name: 'Sat', critical: 2, resolved: 25 },
-  { name: 'Sun', critical: 2, resolved: 28 },
-];
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
 export default function Dashboard() {
   const [repos, setRepos] = useState<any[]>([]);
@@ -47,6 +37,48 @@ export default function Dashboard() {
     : 100;
     
   const scanningCount = repos.filter(r => r.isScanning).length;
+  const totalFindings = totalCritical + totalHigh + totalSecrets;
+  const critPct = totalFindings > 0 ? Math.round((totalCritical / totalFindings) * 100) : 0;
+  const highPct = totalFindings > 0 ? Math.round((totalHigh / totalFindings) * 100) : 0;
+  const secretsPct = totalFindings > 0 ? Math.round((totalSecrets / totalFindings) * 100) : 0;
+
+  const pieData = [
+    { name: 'Critical', value: totalCritical, color: 'var(--color-critical)' },
+    { name: 'High', value: totalHigh, color: 'var(--color-warning)' },
+    { name: 'Secrets', value: totalSecrets, color: '#f97316' }, // orange-500
+  ].filter(d => d.value > 0);
+
+  const dynamicVulnerabilityData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Initialize last 7 days
+    const dataMap = new Map();
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dayName = days[d.getDay()];
+      // Use a combination of dayName and offset to ensure uniqueness if we span weeks, but simple name is fine for 7 days
+      dataMap.set(dayName, { name: dayName, critical: 0, highAndSecrets: 0, _date: d.toDateString() });
+    }
+
+    scans.forEach(scan => {
+      const scanDate = new Date(scan.createdAt);
+      const dayName = days[scanDate.getDay()];
+      if (dataMap.has(dayName)) {
+        const entry = dataMap.get(dayName);
+        // Only count if it's within the last 7 days
+        const diffTime = Math.abs(today.getTime() - scanDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        if (diffDays <= 7) {
+          entry.critical += scan.critical || 0;
+          entry.highAndSecrets += (scan.high || 0) + (scan.secrets || 0);
+        }
+      }
+    });
+
+    return Array.from(dataMap.values());
+  }, [scans]);
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
       <div className="mb-8 mt-2">
@@ -167,7 +199,7 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 mt-4 mb-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={vulnerabilityData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+              <LineChart data={dynamicVulnerabilityData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.3} vertical={false} />
                 <XAxis dataKey="name" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
@@ -177,7 +209,7 @@ export default function Dashboard() {
                 />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Line type="monotone" name="Critical Issues" dataKey="critical" stroke="var(--color-critical)" strokeWidth={2} dot={{ r: 4, fill: 'var(--color-critical)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" name="Resolved" dataKey="resolved" stroke="var(--color-success)" strokeWidth={2} dot={{ r: 4, fill: 'var(--color-success)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" name="High & Secrets" dataKey="highAndSecrets" stroke="var(--color-warning)" strokeWidth={2} dot={{ r: 4, fill: 'var(--color-warning)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -189,34 +221,50 @@ export default function Dashboard() {
             <button className="text-on-surface-variant hover:text-primary"><MoreVertical size={18} /></button>
           </div>
           <div className="flex-1 flex items-center justify-center relative">
-            <div className="w-40 h-40 rounded-full border-[16px] border-surface-variant relative">
-              <Tooltip content="Critical: 2 issues" position="right">
-                <div className="absolute inset-0 rounded-full border-[16px] border-critical cursor-crosshair hover:scale-105 transition-transform" style={{ clipPath: 'polygon(50% 50%, 100% 0, 100% 30%, 50% 50%)', transform: 'rotate(-10deg)' }}></div>
-              </Tooltip>
-              <Tooltip content="High: 12 issues" position="bottom">
-                <div className="absolute inset-0 rounded-full border-[16px] border-warning cursor-crosshair hover:scale-105 transition-transform" style={{ clipPath: 'polygon(50% 50%, 100% 30%, 100% 100%, 0 100%, 0 80%, 50% 50%)' }}></div>
-              </Tooltip>
-              <Tooltip content="Medium: 20 issues" position="left">
-                <div className="absolute inset-0 rounded-full border-[16px] border-secondary cursor-crosshair hover:scale-105 transition-transform" style={{ clipPath: 'polygon(50% 50%, 0 80%, 0 0, 100% 0, 50% 50%)' }}></div>
-              </Tooltip>
-              <div className="absolute inset-0 flex items-center justify-center flex-col z-10 bg-background rounded-full m-[4px] pointer-events-none">
-                <span className="text-2xl font-bold text-on-surface">34</span>
-                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">Total</span>
+            {totalFindings > 0 ? (
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={75}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', borderColor: 'var(--color-outline-variant)', borderRadius: '8px', color: 'var(--color-on-surface)' }}
+                    itemStyle={{ color: 'var(--color-on-surface)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-40 h-40 rounded-full border-[16px] border-surface-variant relative flex items-center justify-center">
               </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center flex-col z-10 pointer-events-none">
+              <span className="text-2xl font-bold text-on-surface">{totalFindings}</span>
+              <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">Total</span>
             </div>
           </div>
           <div className="mt-4 flex flex-col gap-2">
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-critical"></span> <span className="text-on-surface-variant">Critical</span></div>
-              <span className="font-medium">2 (6%)</span>
+              <span className="font-medium">{totalCritical} ({critPct}%)</span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-warning"></span> <span className="text-on-surface-variant">High</span></div>
-              <span className="font-medium">12 (35%)</span>
+              <span className="font-medium">{totalHigh} ({highPct}%)</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-secondary"></span> <span className="text-on-surface-variant">Medium</span></div>
-              <span className="font-medium">20 (59%)</span>
+              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-500"></span> <span className="text-on-surface-variant">Secrets</span></div>
+              <span className="font-medium">{totalSecrets} ({secretsPct}%)</span>
             </div>
           </div>
         </div>
