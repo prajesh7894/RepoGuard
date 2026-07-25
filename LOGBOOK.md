@@ -89,18 +89,19 @@
 
 ---
 
-## 📅 Date: 25/07/2026 *(Planned)*
+## 📅 Date: 25/07/2026
 **Phase:** AI Model Integration Strategy
-**Tasks Planned:**
-- Set up API keys and environment variables for the Google Gemini LLM.
-- Design the context window strategy for passing source code snippets to the LLM without exceeding token limits.
-- Draft prompt engineering instructions to force the LLM to output structured JSON security reviews.
+**Tasks Completed:**
+- Set up API keys and environment variables for the Google Gemini LLM securely using `.env`.
+- Drafted prompt engineering instructions to force the LLM to output structured JSON security reviews.
+- Designed the backend endpoint `/api/ai-review` to handle incoming code snippets and communicate with the Gemini API.
 
-## 📅 Date: 26/07/2026 *(Planned)*
+## 📅 Date: 26/07/2026
 **Phase:** Real AI Code Review Implementation
-**Tasks Planned:**
-- Replace the regex-based "AI Security Review" tab with live API calls to Gemini.
-- Parse the LLM response and render it in a readable, actionable format for the user, suggesting precise code fixes.
+**Tasks Completed:**
+- Replaced the mock delay in the "AI Security Review" tab with live API calls to Gemini.
+- Upgraded the system to use the advanced `gemini-3.5-flash` model for high-speed, accurate code analysis.
+- Parsed the LLM JSON response and dynamically rendered it in the glassmorphism UI, displaying exact logic flaws and precise code fixes.
 
 ## 📅 Date: 27/07/2026 *(Planned)*
 **Phase:** Final Polish & Project Submission Prep
