@@ -19,39 +19,31 @@ export default function AiSecurityReview() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any | null>(null);
 
-  const analyzeCode = () => {
+  const analyzeCode = async () => {
     setIsAnalyzing(true);
     setResults(null);
     
-    // Simulate API delay
-    setTimeout(() => {
-      setResults({
-        vulns: [
-          {
-            title: 'SQL Injection Vulnerability',
-            severity: 'critical',
-            line: 5,
-            description: 'Directly interpolating user input into a SQL query allows attackers to manipulate the query structure, potentially gaining unauthorized access or deleting data.',
-            recommendation: 'Use parameterized queries or prepared statements instead of string interpolation.',
-            fixedCode: `app.post('/api/users', (req, res) => {
-  const { username, email, role } = req.body;
-  
-  // Use parameterized query
-  const query = 'INSERT INTO users (username, email, role) VALUES (?, ?, ?)';
-  
-  db.execute(query, [username, email, role], (err, result) => {
-    if (err) {
-      res.status(500).send('Error creating user');
-      return;
-    }
-    res.status(201).json({ message: 'User created successfully', id: result.insertId });
-  });
-});`
-          }
-        ]
+    try {
+      const res = await fetch('/api/ai-review', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code })
       });
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch AI analysis');
+      }
+      
+      const data = await res.json();
+      setResults(data);
+    } catch (err) {
+      console.error(err);
+      setResults({ vulns: [] });
+    } finally {
       setIsAnalyzing(false);
-    }, 2500);
+    }
   };
 
   return (

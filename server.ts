@@ -39,6 +39,45 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai-review", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: 'Code is required' });
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `You are an expert Secure Code Reviewer. Analyze the following code snippet for logic flaws, injection vectors, and security vulnerabilities.
+Return ONLY a valid JSON object with a single "vulns" array. Each object in the array must have:
+- title: A short, descriptive title of the vulnerability.
+- severity: "critical", "high", "medium", or "low".
+- line: The approximate line number where the issue exists (number).
+- description: A clear explanation of the vulnerability and its impact.
+- recommendation: A short sentence on how to fix it.
+- fixedCode: The complete, corrected version of the code snippet that resolves the issue.
+
+Do NOT wrap the JSON in Markdown backticks or any other formatting. Output ONLY the raw JSON string.
+
+Code to analyze:
+\`\`\`
+${code}
+\`\`\`
+`;
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: prompt
+      });
+      
+      let rawText = response.text || "{}";
+      rawText = rawText.replace(/^```json/i, '').replace(/```$/i, '').trim();
+      
+      const parsed = JSON.parse(rawText);
+      res.json(parsed);
+    } catch (error: any) {
+      console.error('Error generating AI Review:', error);
+      res.status(500).json({ error: error.message || 'Internal Server Error' });
+    }
+  });
+
+
   // --- Prisma API Routes ---
 
   app.get("/api/repos", async (req, res) => {
