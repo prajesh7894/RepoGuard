@@ -103,8 +103,10 @@
 - Upgraded the system to use the advanced `gemini-3.5-flash` model for high-speed, accurate code analysis.
 - Parsed the LLM JSON response and dynamically rendered it in the glassmorphism UI, displaying exact logic flaws and precise code fixes.
 
-## 📅 Date: 27/07/2026 *(Planned)* - Phase 1: Authentication & User Accounts
-- Create database models in Prisma for `User` and `Session`.
+## 📅 Date: 27/07/2026 - Phase 1: Authentication & User Accounts
+**Tasks Completed:**
+- Created database models in Prisma for `User` and `Session`.
+- Pushed schema changes to the local SQLite database to initialize the tables.
 
 ## 📅 Date: 28/07/2026 *(Planned)*
 - Implement backend API endpoints for user registration.
