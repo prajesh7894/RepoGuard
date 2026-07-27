@@ -97,18 +97,15 @@
 - Designed the backend endpoint `/api/ai-review` to handle incoming code snippets and communicate with the Gemini API.
 
 ## 📅 Date: 26/07/2026
-**Phase:** Real AI Code Review Implementation
+**Phase:** Real AI Code Review Implementation & Database Preparation
 **Tasks Completed:**
 - Replaced the mock delay in the "AI Security Review" tab with live API calls to Gemini.
 - Upgraded the system to use the advanced `gemini-3.5-flash` model for high-speed, accurate code analysis.
 - Parsed the LLM JSON response and dynamically rendered it in the glassmorphism UI, displaying exact logic flaws and precise code fixes.
-
-## 📅 Date: 27/07/2026 - Phase 1: Authentication & User Accounts
-**Tasks Completed:**
 - Created database models in Prisma for `User` and `Session`.
 - Pushed schema changes to the local SQLite database to initialize the tables.
 
-## 📅 Date: 28/07/2026 - Phase 1: Authentication & User Accounts
+## 📅 Date: 27/07/2026 - Phase 1: Authentication & User Accounts
 **Tasks Completed:**
 - Implemented backend API endpoints for user registration (`POST /api/register`).
 - Integrated `bcryptjs` for secure password hashing.
