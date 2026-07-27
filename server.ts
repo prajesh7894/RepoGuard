@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { runScanOnRepo } from "./src/utils/scanner.js";
 
 const prisma = new PrismaClient();
@@ -77,6 +78,35 @@ ${code}
     }
   });
 
+
+  // --- Authentication Routes ---
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { email, password, name } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name
+        }
+      });
+
+      res.status(201).json({ message: "User registered successfully", userId: user.id });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // --- Prisma API Routes ---
 

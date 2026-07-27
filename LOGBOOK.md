@@ -108,8 +108,10 @@
 - Created database models in Prisma for `User` and `Session`.
 - Pushed schema changes to the local SQLite database to initialize the tables.
 
-## 📅 Date: 28/07/2026 *(Planned)*
-- Implement backend API endpoints for user registration.
+## 📅 Date: 28/07/2026 - Phase 1: Authentication & User Accounts
+**Tasks Completed:**
+- Implemented backend API endpoints for user registration (`POST /api/register`).
+- Integrated `bcryptjs` for secure password hashing.
 
 ## 📅 Date: 29/07/2026 *(Planned)*
 - Implement backend API endpoints for JWT-based user login.
