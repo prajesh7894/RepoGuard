@@ -4,7 +4,10 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { runScanOnRepo } from "./src/utils/scanner.js";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_development";
 
 const prisma = new PrismaClient();
 
@@ -104,6 +107,40 @@ ${code}
       res.status(201).json({ message: "User registered successfully", userId: user.id });
     } catch (error: any) {
       console.error("Registration error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "1d" });
+      
+      await prisma.session.create({
+        data: {
+          userId: user.id,
+          token,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, name: user.name } });
+    } catch (error: any) {
+      console.error("Login error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

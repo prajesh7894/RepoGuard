@@ -110,8 +110,10 @@
 - Implemented backend API endpoints for user registration (`POST /api/register`).
 - Integrated `bcryptjs` for secure password hashing.
 
-## 📅 Date: 29/07/2026 *(Planned)*
-- Implement backend API endpoints for JWT-based user login.
+## 📅 Date: 28/07/2026 - Phase 1: Authentication & User Accounts
+**Tasks Completed:**
+- Implemented backend API endpoint for JWT-based user login (`POST /api/login`).
+- Added token generation using `jsonwebtoken` and created `Session` records in the database.
 
 ## 📅 Date: 30/07/2026 *(Planned)*
 - Add JWT token storage and management in the React frontend.
