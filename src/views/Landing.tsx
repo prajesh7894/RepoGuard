@@ -23,7 +23,7 @@ export default function Landing({ setView }: LandingProps) {
           <div className="flex items-center gap-4">
             <a className="hidden md:block font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors" href="#">Login</a>
             <button 
-                onClick={() => setView('dashboard')}
+                onClick={() => setView('login')}
                 className="bg-primary-container text-white px-4 py-1.5 rounded-full font-body-sm text-body-sm hover:bg-primary-container/90 transition-all shadow-lg shadow-primary-container/20 cursor-pointer"
             >
               Start Scanning
@@ -59,7 +59,7 @@ export default function Landing({ setView }: LandingProps) {
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button 
-                  onClick={() => setView('dashboard')}
+                  onClick={() => setView('login')}
                   className="bg-primary-container text-white px-8 py-3.5 rounded-full font-body-lg text-body-lg text-center hover:bg-primary-container/90 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] cursor-pointer"
                 >
                   Start Free Trial
@@ -253,7 +253,7 @@ export default function Landing({ setView }: LandingProps) {
               <p className="relative z-10 text-on-surface-variant text-body-lg mb-8 max-w-xl mx-auto">Join thousands of companies using RepoGuard to protect their software supply chain. Setup takes less than 2 minutes.</p>
               <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-4">
                 <button 
-                  onClick={() => setView('dashboard')}
+                  onClick={() => setView('login')}
                   className="bg-primary-container text-white px-8 py-3 rounded-full font-body-lg text-body-lg hover:bg-primary-container/90 transition-all cursor-pointer"
                 >
                   Start Scanning Now
