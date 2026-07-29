@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import jwt
 import os
@@ -11,16 +10,17 @@ import asyncio
 from sse_starlette.sse import EventSourceResponse
 from google import genai
 import re
+import bcrypt
 
-from . import models, schemas
-from .database import engine, get_db
-from .scanner import run_scan_sync
+import models
+import schemas
+from database import engine, get_db
+from scanner import run_scan_sync
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 JWT_SECRET = os.getenv("JWT_SECRET", "fallback_secret_for_development")
 ALGORITHM = "HS256"
 
@@ -31,7 +31,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="User already exists")
     
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     new_user = models.User(email=user.email, password=hashed_password, name=user.name)
     db.add(new_user)
     db.commit()
@@ -41,7 +41,18 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.post("/api/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if not db_user or not pwd_context.verify(user.password, db_user.password):
+    
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Node bcryptjs outputs $2a$ format which is compatible with Python bcrypt.
+    is_valid = False
+    try:
+        is_valid = bcrypt.checkpw(user.password.encode('utf-8'), db_user.password.encode('utf-8'))
+    except Exception:
+        pass
+        
+    if not is_valid:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     expire = datetime.utcnow() + timedelta(days=1)
@@ -130,8 +141,40 @@ def get_scans(db: Session = Depends(get_db)):
         })
     return result
 
+from fastapi import BackgroundTasks
+from database import SessionLocal
+
+def execute_background_scan(repo_id: int):
+    db = SessionLocal()
+    try:
+        repo = db.query(models.Repository).filter(models.Repository.id == repo_id).first()
+        if not repo:
+            return
+            
+        result = run_scan_sync(repo.url)
+        
+        new_scan = models.Scan(
+            repoId=repo.id,
+            critical=result['critical'],
+            high=result['high'],
+            secrets=result['secrets'],
+            status="completed",
+            findingsDetail=json.dumps(result['findings'])
+        )
+        db.add(new_scan)
+        
+        color = "green-400" if result['score'] > 80 else ("yellow-400" if result['score'] > 50 else "red-400")
+        repo.isScanning = False
+        repo.score = result['score']
+        repo.scoreColor = color
+        repo.status = "Critical" if result['critical'] > 0 else "Excellent"
+        
+        db.commit()
+    finally:
+        db.close()
+
 @app.post("/api/scans")
-def trigger_scan(payload: dict, db: Session = Depends(get_db)):
+def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     repo_id = int(payload.get("repoId"))
     repo = db.query(models.Repository).filter(models.Repository.id == repo_id).first()
     if not repo:
@@ -139,52 +182,34 @@ def trigger_scan(payload: dict, db: Session = Depends(get_db)):
     
     repo.isScanning = True
     db.commit()
+    
+    background_tasks.add_task(execute_background_scan, repo.id)
     return {"message": "Scan initiated", "repoId": repo.id}
 
 @app.get("/api/scans/stream")
-async def scan_stream(repoId: int, request: Request, db: Session = Depends(get_db)):
-    repo = db.query(models.Repository).filter(models.Repository.id == repoId).first()
-    if not repo:
-        raise HTTPException(status_code=404, detail="Repository not found")
+async def scan_stream(url: str, request: Request):
+    if not url:
+        raise HTTPException(status_code=400, detail="Repository URL required")
 
     async def event_generator():
         try:
-            yield {"data": json.dumps({"type": "progress", "message": "Initializing secure scanning environment...", "progress": 10})}
+            yield {"data": json.dumps({"type": "log", "message": "Initializing secure scanning environment..."})}
             await asyncio.sleep(1)
             
-            yield {"data": json.dumps({"type": "progress", "message": "Cloning repository...", "progress": 30})}
+            yield {"data": json.dumps({"type": "log", "message": "Cloning repository..."})}
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, run_scan_sync, repo.url)
+            result = await loop.run_in_executor(None, run_scan_sync, url)
             
-            yield {"data": json.dumps({"type": "progress", "message": "Analyzing code syntax & structures...", "progress": 60})}
+            yield {"data": json.dumps({"type": "log", "message": "Analyzing code syntax & structures..."})}
             await asyncio.sleep(1)
             
-            yield {"data": json.dumps({"type": "progress", "message": "Searching for hardcoded secrets...", "progress": 90})}
+            yield {"data": json.dumps({"type": "log", "message": "Searching for hardcoded secrets..."})}
             await asyncio.sleep(1)
-
-            new_scan = models.Scan(
-                repoId=repo.id,
-                critical=result['critical'],
-                high=result['high'],
-                secrets=result['secrets'],
-                status="completed",
-                findingsDetail=json.dumps(result['findings'])
-            )
-            db.add(new_scan)
-            
-            color = "green-400" if result['score'] > 80 else ("yellow-400" if result['score'] > 50 else "red-400")
-            repo.isScanning = False
-            repo.score = result['score']
-            repo.scoreColor = color
-            repo.status = "Critical" if result['critical'] > 0 else "Excellent"
-            
-            db.commit()
 
             yield {"data": json.dumps({
                 "type": "done",
                 "findings": result['findings'],
-                "score": result['score'],
-                "status": repo.status
+                "score": result['score']
             })}
         except Exception as e:
             yield {"data": json.dumps({"type": "error", "message": str(e)})}
