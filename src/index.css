@@ -233,7 +233,40 @@ body {
 .glow-low { box-shadow: 0 0 20px rgba(59, 130, 246, 0.15); }
 
 .score-circle {
-    transition: stroke-dasharray 1s ease-in-out;
+  transition: stroke-dasharray 1s ease-out, stroke 0.5s;
+}
+
+@media print {
+  /* Hide all elements by default */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Make the pdf content visible and positioned at the top left */
+  #pdf-report-content, #pdf-report-content * {
+    visibility: visible;
+  }
+  
+  #pdf-report-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important; /* Ensure readable background */
+    color: black !important; /* Ensure readable text */
+  }
+
+  /* Force light mode styles for print to ensure good contrast, or let browser handle it */
+  .bg-surface-container-highest { background-color: white !important; }
+  .text-on-surface { color: black !important; }
+  .text-on-surface-variant { color: #333 !important; }
+  
+  /* Hide the close/download buttons inside the report during print */
+  #pdf-report-content button {
+    display: none !important;
+  }
 }
 
 .text-critical { color: #f87171; }

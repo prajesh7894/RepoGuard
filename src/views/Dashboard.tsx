@@ -8,7 +8,21 @@ export default function Dashboard() {
   const [scans, setScans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [userName, setUserName] = useState('Alex');
+
   useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('repoguard_user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user && user.name) {
+          setUserName(user.name.split(' ')[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse user from localStorage');
+    }
+    
     const fetchData = async () => {
       try {
         const [reposRes, scansRes] = await Promise.all([
@@ -82,7 +96,7 @@ export default function Dashboard() {
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
       <div className="mb-8 mt-2">
-        <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, Alex.</h2>
+        <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
         <p className="text-on-surface-variant font-body-lg">Your security posture is looking strong.</p>
       </div>
       

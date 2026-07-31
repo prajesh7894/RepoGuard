@@ -37,37 +37,60 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
        url = 'https://github.com/expressjs/express.git';
     }
 
-    const sseUrl = `/api/scans/stream?url=${encodeURIComponent(url)}`;
-    const eventSource = new EventSource(sseUrl);
+    let eventSource: EventSource | null = null;
 
-    eventSource.onmessage = (e) => {
+    const startScan = async () => {
       try {
-        const data = JSON.parse(e.data);
-        if (data.type === 'log') {
-          setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > ${data.message}`]);
-          setScanProgress(prev => Math.min(prev + 5, 95)); // Fake progress until done
-        } else if (data.type === 'done') {
+        // 1. Create Repo in DB so it shows up in dashboard
+        const res = await fetch('/api/repos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const repo = await res.json();
+        
+        // 2. Start stream and pass repoId to save scan results
+        const sseUrl = `/api/scans/stream?url=${encodeURIComponent(url)}&ai=${scanModules.ai}&secret=${scanModules.secret}&dep=${scanModules.dependency}&repoId=${repo.id}`;
+        eventSource = new EventSource(sseUrl);
+
+        eventSource.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'log') {
+              setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > ${data.message}`]);
+              setScanProgress(prev => Math.min(prev + 5, 95)); // Fake progress until done
+            } else if (data.type === 'done') {
+              setScanProgress(100);
+              setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > Scan finished. Found ${data.findings.length} issues.`]);
+              eventSource?.close();
+            } else if (data.type === 'error') {
+              setScanProgress(100);
+              setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > [FATAL ERROR] ${data.message}`]);
+              eventSource?.close();
+            }
+          } catch (err) {
+            console.error('SSE parsing error', err);
+          }
+        };
+
+        eventSource.onerror = (err) => {
+          console.error('EventSource failed:', err);
+          eventSource?.close();
           setScanProgress(100);
-          setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > Scan finished. Found ${data.findings.length} issues.`]);
-          eventSource.close();
-        } else if (data.type === 'error') {
-          setScanProgress(100);
-          setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > [FATAL ERROR] ${data.message}`]);
-          eventSource.close();
-        }
+        };
       } catch (err) {
-        console.error('SSE parsing error', err);
+        console.error('Failed to initiate scan', err);
+        setScanLogs(prev => [...prev, `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}] > [FATAL ERROR] Failed to connect to server.`]);
+        setScanProgress(100);
       }
     };
 
-    eventSource.onerror = (err) => {
-      console.error('EventSource failed:', err);
-      eventSource.close();
-      setScanProgress(100);
-    };
+    startScan();
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, [isScanning, repoUrl]);
 

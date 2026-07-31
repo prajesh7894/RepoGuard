@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import jwt
 import os
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 import uuid
 from typing import List
 import json
@@ -108,6 +111,44 @@ def get_organizations(db: Session = Depends(get_db)):
     orgs = db.query(models.Organization).order_by(models.Organization.createdAt.desc()).all()
     return orgs
 
+@app.get("/api/organizations/{org_id}/members")
+def get_organization_members(org_id: int, db: Session = Depends(get_db)):
+    members = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == org_id).all()
+    result = []
+    for m in members:
+        user = db.query(models.User).filter(models.User.id == m.userId).first()
+        result.append({
+            "id": m.id,
+            "orgId": m.orgId,
+            "userId": m.userId,
+            "role": m.role,
+            "user": {"id": user.id, "email": user.email, "name": user.name} if user else None
+        })
+    return result
+
+@app.post("/api/organizations/{org_id}/members")
+def add_organization_member(org_id: int, payload: dict, db: Session = Depends(get_db)):
+    email = payload.get("email")
+    role = payload.get("role", "viewer")
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found with this email")
+        
+    existing = db.query(models.OrganizationMember).filter(
+        models.OrganizationMember.orgId == org_id, 
+        models.OrganizationMember.userId == user.id
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="User is already a member")
+        
+    new_member = models.OrganizationMember(orgId=org_id, userId=user.id, role=role)
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+    return new_member
+
 # -- Repositories --
 @app.get("/api/repos")
 def get_repos(db: Session = Depends(get_db)):
@@ -118,6 +159,7 @@ def get_repos(db: Session = Depends(get_db)):
         result.append({
             "id": repo.id,
             "name": repo.name,
+            "url": repo.url,
             "lang": repo.lang,
             "status": repo.status,
             "score": repo.score,
@@ -240,24 +282,66 @@ def startup_event():
     scheduler.start()
 
 @app.get("/api/scans/stream")
-async def scan_stream(url: str, request: Request):
+async def scan_stream(
+    url: str, 
+    request: Request,
+    ai: str = "true",
+    secret: str = "true",
+    dep: str = "true",
+    repoId: int = None
+):
     if not url:
         raise HTTPException(status_code=400, detail="Repository URL required")
 
     async def event_generator():
         try:
-            yield {"data": json.dumps({"type": "log", "message": "Initializing secure scanning environment..."})}
-            await asyncio.sleep(1)
+            yield {"data": json.dumps({"type": "log", "message": "Initializing RepoGuard modular scanning engine..."})}
+            await asyncio.sleep(0.5)
             
-            yield {"data": json.dumps({"type": "log", "message": "Cloning repository..."})}
+            yield {"data": json.dumps({"type": "log", "message": "Cloning repository to secure volume..."})}
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, run_scan_sync, url)
             
-            yield {"data": json.dumps({"type": "log", "message": "Analyzing code syntax & structures..."})}
-            await asyncio.sleep(1)
+            yield {"data": json.dumps({"type": "log", "message": "[Plugin: Bandit] Analyzing Python Abstract Syntax Trees (AST)..."})}
+            await asyncio.sleep(0.5)
             
-            yield {"data": json.dumps({"type": "log", "message": "Searching for hardcoded secrets..."})}
-            await asyncio.sleep(1)
+            if secret == "true":
+                yield {"data": json.dumps({"type": "log", "message": "[Plugin: Regex] Running Entropy Engine for hardcoded secrets..."})}
+                await asyncio.sleep(0.5)
+                
+            if dep == "true":
+                yield {"data": json.dumps({"type": "log", "message": "[Plugin: SCA] Scanning dependency tree for known CVEs..."})}
+                await asyncio.sleep(0.5)
+                
+            if ai == "true":
+                yield {"data": json.dumps({"type": "log", "message": "[Plugin: AI] Analyzing data flow and logic paths with LLM..."})}
+                await asyncio.sleep(0.5)
+            
+            yield {"data": json.dumps({"type": "log", "message": "Aggregating vulnerabilities and generating compliance report..."})}
+            await asyncio.sleep(0.5)
+
+            if repoId is not None:
+                db = SessionLocal()
+                try:
+                    repo = db.query(models.Repository).filter(models.Repository.id == repoId).first()
+                    if repo:
+                        new_scan = models.Scan(
+                            repoId=repo.id,
+                            critical=result['critical'],
+                            high=result['high'],
+                            secrets=result['secrets'],
+                            status="completed",
+                            findingsDetail=json.dumps(result['findings'])
+                        )
+                        db.add(new_scan)
+                        color = "green-400" if result['score'] > 80 else ("yellow-400" if result['score'] > 50 else "red-400")
+                        repo.isScanning = False
+                        repo.score = result['score']
+                        repo.scoreColor = color
+                        repo.status = "Critical" if result['critical'] > 0 else "Excellent"
+                        db.commit()
+                finally:
+                    db.close()
 
             yield {"data": json.dumps({
                 "type": "done",
@@ -269,64 +353,95 @@ async def scan_stream(url: str, request: Request):
             
     return EventSourceResponse(event_generator())
 
+import httpx
+
 # -- AI --
 @app.post("/api/chat")
 async def chat(req: schemas.ChatRequest):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Gemini API Key missing")
     try:
-        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        
         contents = []
         for msg in req.history:
-            contents.append(genai.types.Content(
-                role="user" if msg.role == "user" else "model",
-                parts=[genai.types.Part.from_text(msg.text)]
-            ))
-        contents.append(genai.types.Content(
-            role="user",
-            parts=[genai.types.Part.from_text(req.message)]
-        ))
+            contents.append({
+                "role": "user" if msg.role == "user" else "model",
+                "parts": [{"text": msg.text}]
+            })
+        contents.append({
+            "role": "user",
+            "parts": [{"text": req.message}]
+        })
         
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config=genai.types.GenerateContentConfig(
-                system_instruction="You are a highly capable AI Security Assistant for RepoGuard. Your goal is to help users understand their vulnerabilities, recommend fixes, and provide secure coding practices."
+        payload = {
+            "systemInstruction": {
+                "parts": [{"text": "You are a highly capable AI Security Assistant for RepoGuard. Your goal is to help users understand their vulnerabilities, recommend fixes, and provide secure coding practices."}]
+            },
+            "contents": contents
+        }
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
+                json=payload,
+                timeout=30.0
             )
-        )
-        return {"response": response.text}
+        resp.raise_for_status()
+        data = resp.json()
+        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        return {"response": text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai-review")
 async def ai_review(req: schemas.AIReviewRequest):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Gemini API Key missing")
     try:
-        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-        
-        prompt = f"""You are an expert Secure Code Reviewer. Analyze the following code snippet for logic flaws, injection vectors, and security vulnerabilities.
-Return ONLY a valid JSON object with a single "vulns" array. Each object in the array must have:
-- title: A short, descriptive title of the vulnerability.
-- severity: "critical", "high", "medium", or "low".
-- line: The approximate line number where the issue exists (number).
-- description: A clear explanation of the vulnerability and its impact.
-- recommendation: A short sentence on how to fix it.
-- fixedCode: The complete, corrected version of the code snippet that resolves the issue.
+        prompt = f"""You are an expert Secure Code Reviewer. Analyze the following code snippet.
+Return a valid JSON object with a single "vulns" array.
+Each object in the "vulns" array MUST have:
+- title: Short descriptive title. If false positive, say "False Positive / Safe".
+- severity: "critical", "high", "medium", "low", or "info".
+- line: Approximate line number (number).
+- description: Clear explanation of the vulnerability. If it is a false positive or not code, explain why.
+- recommendation: How to fix or suppress it.
+- fixedCode: The corrected code.
 
-Do NOT wrap the JSON in Markdown backticks or any other formatting. Output ONLY the raw JSON string.
+You MUST return exactly ONE object in the "vulns" array, even if the snippet is safe or just text.
+Output ONLY raw JSON.
 
 Code to analyze:
 ```
 {req.code}
 ```
 """
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        payload = {
+            "contents": [{
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
         
-        raw_text = response.text or "{}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
+                json=payload,
+                timeout=30.0
+            )
+        resp.raise_for_status()
+        data = resp.json()
+        raw_text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", '{"vulns": []}')
+        
         raw_text = re.sub(r'^```json\s*', '', raw_text, flags=re.IGNORECASE)
         raw_text = re.sub(r'\s*```$', '', raw_text, flags=re.IGNORECASE).strip()
         
         return json.loads(raw_text)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

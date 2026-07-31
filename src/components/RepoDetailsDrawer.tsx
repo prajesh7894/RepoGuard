@@ -1,7 +1,64 @@
-import { X, ShieldAlert, Code, ExternalLink, GitBranch } from 'lucide-react';
+import { useState } from 'react';
+import { X, ShieldAlert, Code, ExternalLink, GitBranch, Download, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import PdfReportTemplate from './PdfReportTemplate';
 
 export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClose: () => void }) {
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [aiReviews, setAiReviews] = useState<Record<number, any>>({});
+  const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
+
   if (!repo) return null;
+
+  const handleAiReview = async (idx: number, finding: any) => {
+    const codeSnippet = finding.snippet || finding.match;
+    if (!codeSnippet) return;
+
+    setAiLoading(prev => ({ ...prev, [idx]: true }));
+    try {
+      const response = await fetch('/api/ai-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codeSnippet })
+      });
+      const data = await response.json();
+      
+      if (data && data.vulns && data.vulns.length > 0) {
+        setAiReviews(prev => ({ ...prev, [idx]: data.vulns[0] }));
+      } else {
+        setAiReviews(prev => ({ ...prev, [idx]: { error: "AI could not definitively identify a vulnerability in this snippet." } }));
+      }
+    } catch (error) {
+      console.error("AI Review failed:", error);
+      setAiReviews(prev => ({ ...prev, [idx]: { error: "Failed to connect to Gemini API." } }));
+    } finally {
+      setAiLoading(prev => ({ ...prev, [idx]: false }));
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const element = document.getElementById('hidden-pdf-template');
+    if (!element) return;
+    
+    setIsGeneratingPdf(true);
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const opt = {
+        margin:       0,
+        filename:     `RepoGuard-Report-${repo.name}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   return (
     <>
@@ -18,12 +75,30 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
               <span className="flex items-center gap-1"><Code size={14} /> {repo.lang}</span>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="px-3 py-1.5 flex items-center gap-2 bg-primary-container text-white rounded text-sm hover:bg-primary-container/90 transition-colors disabled:opacity-50"
+              title="Download PDF Report"
+            >
+              {isGeneratingPdf ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              <span className="hidden sm:inline">{isGeneratingPdf ? 'Generating...' : 'PDF Report'}</span>
+            </button>
+            <button onClick={onClose} className="p-2 rounded-full text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+        
+        {/* HIDDEN PDF TEMPLATE CONTAINER */}
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, zIndex: -1 }}>
+          <div id="hidden-pdf-template">
+            <PdfReportTemplate repo={repo} />
+          </div>
         </div>
 
-        <div className="p-6 flex flex-col gap-8">
+        <div id="pdf-report-content" className="p-6 flex flex-col gap-8 bg-surface-container-highest">
           {/* Overview Score */}
           <div className="flex items-center gap-6 p-6 rounded-xl bg-surface-container-lowest border border-outline-variant/30">
             <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
@@ -77,7 +152,7 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                         <h4 className="font-medium text-on-surface">Security Issue Detected</h4>
                       </div>
                     </div>
-                    <div className="p-4 bg-surface-container-lowest">
+                    <div className="p-4 bg-surface-container-lowest flex flex-col gap-4">
                       <div className="rounded-md overflow-hidden border border-outline-variant/30 font-code-sm text-xs">
                         <div className="bg-surface-variant px-3 py-1 text-on-surface-variant border-b border-outline-variant/30 flex justify-between">
                           <span>{finding.file}</span>
@@ -85,9 +160,66 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                         </div>
                         <div className="p-3 bg-surface-container-lowest overflow-x-auto text-on-surface whitespace-pre">
                           <div className={`${finding.type === 'SECRET' ? 'bg-orange-500/20 border-orange-500 text-orange-400' : finding.severity === 'CRITICAL' ? 'bg-critical/20 border-critical text-critical' : 'bg-warning/20 border-warning text-warning'} -mx-3 px-3 py-0.5 border-l-2`}>
-                            {finding.line}: {finding.snippet}
+                            {finding.line}: {finding.snippet || finding.match}
                           </div>
                         </div>
+                      </div>
+
+                      {/* AI Review Section */}
+                      <div className="mt-2">
+                        {!aiReviews[idx] && !aiLoading[idx] && (
+                          <button 
+                            onClick={() => handleAiReview(idx, finding)}
+                            className="flex items-center gap-2 text-sm bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors font-medium border border-primary/20"
+                          >
+                            <Sparkles size={16} /> Analyze with Gemini AI
+                          </button>
+                        )}
+
+                        {aiLoading[idx] && (
+                          <div className="flex items-center gap-3 text-primary text-sm p-3 bg-primary/5 rounded-lg border border-primary/10">
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Gemini is analyzing this code snippet...</span>
+                          </div>
+                        )}
+
+                        {aiReviews[idx] && !aiReviews[idx].error && (
+                          <div className="bg-surface-variant/30 border border-primary/30 rounded-xl overflow-hidden mt-2">
+                            <div className="bg-primary/10 px-4 py-2.5 border-b border-primary/20 flex items-center gap-2 text-primary font-medium text-sm">
+                              <Sparkles size={16} /> Gemini AI Insights
+                            </div>
+                            <div className="p-4 space-y-4">
+                              <div>
+                                <h5 className="text-xs text-outline uppercase font-bold tracking-wider mb-1">Vulnerability Analysis</h5>
+                                <p className="text-sm text-on-surface-variant">{aiReviews[idx].description}</p>
+                              </div>
+                              <div>
+                                <h5 className="text-xs text-outline uppercase font-bold tracking-wider mb-1">Recommendation</h5>
+                                <p className="text-sm text-on-surface-variant flex items-start gap-2">
+                                  <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
+                                  <span>{aiReviews[idx].recommendation}</span>
+                                </p>
+                              </div>
+                              
+                              {aiReviews[idx].fixedCode && (
+                                <div className="mt-4">
+                                  <h5 className="text-xs text-outline uppercase font-bold tracking-wider mb-2">Suggested Fix</h5>
+                                  <div className="rounded-md border border-outline-variant/30 bg-[#0d1117] overflow-x-auto p-3">
+                                    <pre className="text-[13px] text-green-400 font-code-sm m-0">
+                                      {aiReviews[idx].fixedCode}
+                                    </pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {aiReviews[idx] && aiReviews[idx].error && (
+                          <div className="text-sm text-warning p-3 bg-warning-subtle/10 border border-warning/20 rounded-lg">
+                            {aiReviews[idx].error}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
