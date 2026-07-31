@@ -16,10 +16,30 @@ import models
 import schemas
 from database import engine, get_db
 from scanner import run_scan_sync
+from webhooks import router as webhooks_router
 
 models.Base.metadata.create_all(bind=engine)
 
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from database import SessionLocal
+
+def nightly_scan_job():
+    db = SessionLocal()
+    try:
+        repos = db.query(models.Repository).all()
+        for repo in repos:
+            # We delay the import of execute_background_scan or define it below, 
+            # actually execute_background_scan is defined further down. 
+            # We can use a helper or import inside the thread.
+            pass # We'll define the actual thread call inside the job later or move execute_background_scan up
+    finally:
+        db.close()
+
+# We will define the lifespan and actual job logic below after execute_background_scan is defined.
 app = FastAPI()
+
+app.include_router(webhooks_router, prefix="/api/webhooks")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "fallback_secret_for_development")
 ALGORITHM = "HS256"
@@ -73,6 +93,20 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "token": encoded_jwt,
         "user": {"id": db_user.id, "email": db_user.email, "name": db_user.name}
     }
+
+# -- Organizations --
+@app.post("/api/organizations", status_code=status.HTTP_201_CREATED)
+def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(get_db)):
+    new_org = models.Organization(name=org.name)
+    db.add(new_org)
+    db.commit()
+    db.refresh(new_org)
+    return new_org
+
+@app.get("/api/organizations")
+def get_organizations(db: Session = Depends(get_db)):
+    orgs = db.query(models.Organization).order_by(models.Organization.createdAt.desc()).all()
+    return orgs
 
 # -- Repositories --
 @app.get("/api/repos")
@@ -143,6 +177,7 @@ def get_scans(db: Session = Depends(get_db)):
 
 from fastapi import BackgroundTasks
 from database import SessionLocal
+import threading
 
 def execute_background_scan(repo_id: int):
     db = SessionLocal()
@@ -185,6 +220,24 @@ def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session =
     
     background_tasks.add_task(execute_background_scan, repo.id)
     return {"message": "Scan initiated", "repoId": repo.id}
+
+# Update nightly_scan_job now that execute_background_scan is defined
+def run_nightly_scans():
+    db = SessionLocal()
+    try:
+        repos = db.query(models.Repository).all()
+        for repo in repos:
+            # Run each scan in a separate thread to avoid blocking the scheduler
+            threading.Thread(target=execute_background_scan, args=(repo.id,)).start()
+    finally:
+        db.close()
+
+# Start scheduler on startup using an event (simpler than moving app instantiation)
+@app.on_event("startup")
+def startup_event():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(run_nightly_scans, 'cron', hour=0, minute=0)
+    scheduler.start()
 
 @app.get("/api/scans/stream")
 async def scan_stream(url: str, request: Request):

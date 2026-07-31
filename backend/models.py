@@ -7,6 +7,7 @@ class Repository(Base):
     __tablename__ = "Repository"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    orgId = Column(Integer, ForeignKey("Organization.id"), nullable=True)
     name = Column(String)
     url = Column(String, nullable=True)
     lang = Column(String)
@@ -17,6 +18,7 @@ class Repository(Base):
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    organization = relationship("Organization", back_populates="repositories")
     scans = relationship("Scan", back_populates="repository")
 
 class Scan(Base):
@@ -44,6 +46,7 @@ class User(Base):
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     sessions = relationship("Session", back_populates="user")
+    organizations = relationship("OrganizationMember", back_populates="user")
 
 class Session(Base):
     __tablename__ = "Session"
@@ -55,3 +58,26 @@ class Session(Base):
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="sessions")
+
+class Organization(Base):
+    __tablename__ = "Organization"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, index=True)
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    members = relationship("OrganizationMember", back_populates="organization")
+    repositories = relationship("Repository", back_populates="organization")
+
+class OrganizationMember(Base):
+    __tablename__ = "OrganizationMember"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    orgId = Column(Integer, ForeignKey("Organization.id"))
+    userId = Column(Integer, ForeignKey("User.id"))
+    role = Column(String, default="viewer") # "admin", "editor", "viewer"
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="members")
+    user = relationship("User", back_populates="organizations")

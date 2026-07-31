@@ -32,3 +32,23 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class OrganizationCreate(BaseModel):
+    name: str
+
+class OrganizationResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+class OrganizationMemberResponse(BaseModel):
+    id: int
+    orgId: int
+    userId: int
+    role: str
+    user: Optional[UserResponse] = None
+
+    class Config:
+        orm_mode = True
