@@ -2,10 +2,15 @@ import os
 import re
 
 SECRET_PATTERNS = [
-    r'AKIA[0-9A-Z]{16}',
-    r'(?i)github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}',
-    r'(?i)bearer\s+[a-zA-Z0-9\-\._~+/]+=*',
-    r'(?i)password\s*=\s*[\'"][^\'"]+[\'"]',
+    r'AKIA[0-9A-Z]{16}', # AWS Access Key
+    r'(?i)github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}', # GitHub PAT
+    r'(?i)bearer\s+[a-zA-Z0-9\-\._~+/]+=*', # Generic Bearer Token
+    r'(?i)password\s*=\s*[\'"][^\'"]+[\'"]', # Password assignment
+    r'sk_live_[0-9a-zA-Z]{24}', # Stripe Secret Key
+    r'xox[baprs]-[0-9a-zA-Z]{10,48}', # Slack Token
+    r'AIza[0-9A-Za-z-_]{35}', # Google API Key
+    r'SK[0-9a-fA-F]{32}', # Twilio API Key
+    r'-----BEGIN (RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----', # Private Keys
 ]
 
 def regex_scan(repo_path: str):

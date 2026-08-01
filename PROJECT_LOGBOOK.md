@@ -27,6 +27,7 @@
 | **Day 15** | `29/07/2026` | Async Background Task Engine & Scanning Queue | ✅ |
 | **Day 16** | `30/07/2026` | Enterprise Backend Architecture (RBAC, Webhooks, Cron) | ✅ |
 | **Day 17** | `31/07/2026` | AI Integration & Professional PDF Generation | ✅ |
+| **Day 18** | `01/08/2026` | Advanced Secret Detection Heuristics | ✅ |
 
 ---
 
@@ -124,7 +125,15 @@
   - Implemented dynamic API model resolution and error handling for robust text generation via `gemini-flash-latest`.
 - **Outcome:** The platform now offers highly polished PDF exports and state-of-the-art AI code reviews seamlessly integrated into the user workflow.
 
+## 📅 Day 18: Advanced Secret Detection Heuristics
+**Date:** `01/08/2026` *(Today)*
+- **Tasks:**
+  - Expanded the `regex.py` plugin with high-confidence patterns targeting Stripe Secret Keys, Slack Tokens, Google (GCP) API Keys, Twilio API Keys, and RSA/PGP Private Keys.
+  - Engineered a mathematical secret detection heuristic using Shannon Entropy in the `secrets.py` plugin.
+  - Configured the entropy engine to scan for long, contiguous alphanumeric blocks (e.g., base64/hex) and flag highly unpredictable strings (entropy > 4.5) as potential undocumented secrets.
+- **Outcome:** RepoGuard can now intelligently detect both explicitly patterned tokens and entirely random, custom cryptographic keys embedded in source code.
+
 ---
 
 ### 🎯 Next Planned Milestones
-- [ ] Implement additional secret detection heuristics.
+- [x] Implement additional secret detection heuristics.
