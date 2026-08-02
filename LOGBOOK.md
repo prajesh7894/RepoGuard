@@ -127,8 +127,13 @@
 ## 📅 Date: 01/08/2026 *(Planned)*
 - Secure backend API routes with an Auth Middleware.
 
-## 📅 Date: 02/08/2026 *(Planned)* - Phase 2: PDF Reporting & Export System
-- Add "Export Data" buttons and dropdown UI to the Scan History page.
+## 📅 Date: 02/08/2026
+**Phase:** Full System Wireup & Real Data Integration
+**Tasks Completed:**
+- Added user preferences state directly to the database via Prisma schema / SQLite `User` table migrations.
+- Engineered the backend `Notification` models and wired them to the background scanning engine for dynamic alerts.
+- Replaced all frontend hardcoded mock data across Scanners (Secrets & Dependencies), Reports, and Notification views with functional API calls fetching dynamic, real-time data.
+- Ensured JWT auth tokens correctly flow through all new API routes, and successfully resolved complex schema mismatch bugs during integration.
 
 ## 📅 Date: 03/08/2026 *(Planned)*
 - Create a backend endpoint to export a specific scan as raw JSON.
