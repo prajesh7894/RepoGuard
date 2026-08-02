@@ -1,13 +1,57 @@
+import { useEffect, useState } from 'react';
 import { BarChart, Download, FileText, Calendar, Filter } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Reports() {
-  const reports = [
-    { id: 'rep-001', name: 'Weekly Security Summary', date: 'Oct 24, 2026', type: 'PDF', size: '2.4 MB' },
-    { id: 'rep-002', name: 'Compliance Audit - SOC2', date: 'Oct 20, 2026', type: 'CSV', size: '1.1 MB' },
-    { id: 'rep-003', name: 'Dependency Vulnerability Trend', date: 'Oct 15, 2026', type: 'PDF', size: '3.8 MB' },
-    { id: 'rep-004', name: 'Exposed Secrets Ledger', date: 'Oct 10, 2026', type: 'CSV', size: '542 KB' },
-  ];
+  const { token } = useAuth();
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/reports/analytics', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAnalytics(data);
+        }
+        
+        // Also fetch scans for the reports table
+        const scanRes = await fetch('/api/scans', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (scanRes.ok) {
+          const scanData = await res.json();
+          const generatedReports = scanData.slice(0, 10).map((scan: any) => ({
+             id: `rep-${scan.id}`,
+             name: `Scan Report - ${scan.repository?.name || 'Unknown'}`,
+             date: new Date(scan.createdAt).toLocaleDateString(),
+             type: 'JSON',
+             size: '12 KB',
+             scan: scan
+          }));
+          setReports(generatedReports);
+        }
+      } catch (e) {
+        console.error("Failed to load reports", e);
+      }
+    };
+    fetchAnalytics();
+  }, [token]);
+
+  const handleDownload = (report: any) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report.scan, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `${report.name.replace(/\s+/g, '_')}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-6xl mx-auto">
@@ -28,23 +72,25 @@ export default function Reports() {
         <div className="glass-card p-6 rounded-xl border border-outline-variant/30 cursor-default">
           <h3 className="font-semibold text-on-surface mb-4">Vulnerability Trend (30 Days)</h3>
           <div className="h-32 flex items-end gap-2">
-            {[35, 42, 28, 45, 52, 38, 25, 20, 15, 12].map((height, i) => (
-              <Tooltip key={i} content={`Oct ${i * 3 + 1}: ${height} issues`}>
-                <div className="flex-1 w-full bg-primary/20 rounded-t-sm hover:bg-primary/40 transition-colors cursor-crosshair" style={{ height: `${height}%`, minWidth: '16px' }}></div>
+            {analytics?.trend ? analytics.trend.map((height: number, i: number) => (
+              <Tooltip key={i} content={`Report ${i + 1}: ${height} issues`}>
+                <div className="flex-1 w-full bg-primary/20 rounded-t-sm hover:bg-primary/40 transition-colors cursor-crosshair" style={{ height: `${Math.min(100, Math.max(10, height * 5))}%`, minWidth: '16px' }}></div>
               </Tooltip>
-            ))}
+            )) : (
+               <div className="flex-1 w-full flex items-center justify-center text-sm text-on-surface-variant">Loading...</div>
+            )}
           </div>
           <div className="flex justify-between mt-2 text-xs text-on-surface-variant">
-            <span>Oct 1</span>
-            <span>Oct 30</span>
+            <span>Past Scans</span>
+            <span>Recent</span>
           </div>
         </div>
         <div className="glass-card p-6 rounded-xl border border-outline-variant/30 cursor-default">
           <h3 className="font-semibold text-on-surface mb-4">Severity Distribution</h3>
           <div className="flex h-32 items-center justify-center gap-6">
-            <Tooltip content="Critical: 12, High: 25, Medium: 43">
+            <Tooltip content={analytics ? `Critical: ${analytics.severity.critical}, High: ${analytics.severity.high}, Medium: ${analytics.severity.medium}` : "Loading"}>
               <div className="relative w-24 h-24 rounded-full border-[8px] border-critical flex items-center justify-center cursor-help">
-                <span className="text-xl font-bold text-on-surface">12</span>
+                <span className="text-xl font-bold text-on-surface">{analytics?.severity?.critical || 0}</span>
               </div>
             </Tooltip>
             <div className="flex flex-col gap-2 text-sm">
@@ -99,7 +145,7 @@ export default function Reports() {
                   </td>
                   <td className="p-4 text-on-surface-variant">{report.size}</td>
                   <td className="p-4 text-right">
-                    <button className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex">
+                    <button onClick={() => handleDownload(report)} className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex">
                       <Download size={18} />
                     </button>
                   </td>

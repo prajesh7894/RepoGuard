@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Eye, FileCode, Gauge, ChevronDown, Blocks, Clock, MoreVertical, Bug, Key, RefreshCw, Database } from 'lucide-react';
 import RepoDetailsDrawer from '../components/RepoDetailsDrawer';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Repositories() {
   const [selectedRepo, setSelectedRepo] = useState<any | null>(null);
   const [repos, setRepos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { token } = useAuth();
+
   const fetchRepos = async () => {
     try {
-      const res = await fetch('/api/repos');
+      const res = await fetch('/api/repos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Failed to fetch repos");
       const data = await res.json();
-      setRepos(data);
+      setRepos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch repos:', error);
     } finally {
@@ -20,8 +27,10 @@ export default function Repositories() {
   };
 
   useEffect(() => {
-    fetchRepos();
-  }, []);
+    if (token) {
+      fetchRepos();
+    }
+  }, [token]);
 
   // Poll for updates if any repo is currently scanning
   useEffect(() => {
@@ -37,7 +46,10 @@ export default function Repositories() {
       setRepos(repos.map(r => r.id === repoId ? { ...r, isScanning: true } : r));
       await fetch('/api/scans', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ repoId })
       });
       // The useEffect above will handle polling until isScanning becomes false
@@ -56,7 +68,10 @@ export default function Repositories() {
       setIsLoading(true);
       await fetch('/api/repos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ name, url, lang: 'Unknown', visibility: 'Public' })
       });
       fetchRepos();

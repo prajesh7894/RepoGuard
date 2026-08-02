@@ -20,6 +20,7 @@ import schemas
 from database import engine, get_db
 from scanner import run_scan_sync
 from webhooks import router as webhooks_router
+from auth import get_current_user
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -97,6 +98,16 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "user": {"id": db_user.id, "email": db_user.email, "name": db_user.name}
     }
 
+@app.get("/api/me")
+def get_me(user: models.User = Depends(get_current_user)):
+    return {"id": user.id, "email": user.email, "name": user.name, "preferences": user.preferences}
+
+@app.put("/api/me/preferences")
+def update_preferences(prefs: schemas.PreferencesUpdate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    user.preferences = prefs.preferences
+    db.commit()
+    return {"message": "Preferences updated successfully"}
+
 # -- Organizations --
 @app.post("/api/organizations", status_code=status.HTTP_201_CREATED)
 def create_organization(org: schemas.OrganizationCreate, db: Session = Depends(get_db)):
@@ -151,7 +162,7 @@ def add_organization_member(org_id: int, payload: dict, db: Session = Depends(ge
 
 # -- Repositories --
 @app.get("/api/repos")
-def get_repos(db: Session = Depends(get_db)):
+def get_repos(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     repos = db.query(models.Repository).order_by(models.Repository.updatedAt.desc()).all()
     result = []
     for repo in repos:
@@ -176,7 +187,7 @@ def get_repos(db: Session = Depends(get_db)):
     return result
 
 @app.post("/api/repos")
-def create_repo(repo: schemas.RepoCreate, db: Session = Depends(get_db)):
+def create_repo(repo: schemas.RepoCreate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     name = repo.url.split("/")[-1].replace(".git", "") if "/" in repo.url else "New Repo"
     new_repo = models.Repository(
         name=name,
@@ -201,7 +212,7 @@ def get_repo(id: int, db: Session = Depends(get_db)):
 
 # -- Scans --
 @app.get("/api/scans")
-def get_scans(db: Session = Depends(get_db)):
+def get_scans(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     scans = db.query(models.Scan).order_by(models.Scan.createdAt.desc()).limit(20).all()
     result = []
     for scan in scans:
@@ -247,11 +258,25 @@ def execute_background_scan(repo_id: int):
         repo.status = "Critical" if result['critical'] > 0 else "Excellent"
         
         db.commit()
+        
+        # Create Notification
+        new_notif = models.Notification(
+            userId=repo.orgId or 1, # default to user 1 for now if no org setup fully links user
+            type="success",
+            title="Scan Completed Successfully",
+            message=f"Background scan for {repo.name} finished with {result['critical']} critical findings."
+        )
+        # Try to find a user in that org
+        member = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == repo.orgId).first()
+        if member:
+            new_notif.userId = member.userId
+        db.add(new_notif)
+        db.commit()
     finally:
         db.close()
 
 @app.post("/api/scans")
-def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     repo_id = int(payload.get("repoId"))
     repo = db.query(models.Repository).filter(models.Repository.id == repo_id).first()
     if not repo:
@@ -339,6 +364,19 @@ async def scan_stream(
                         repo.score = result['score']
                         repo.scoreColor = color
                         repo.status = "Critical" if result['critical'] > 0 else "Excellent"
+                        
+                        new_notif = models.Notification(
+                            type="success",
+                            title="Scan Completed Successfully",
+                            message=f"Manual scan for {repo.name} finished with {result['critical']} critical findings."
+                        )
+                        member = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == repo.orgId).first()
+                        if member:
+                            new_notif.userId = member.userId
+                        else:
+                            new_notif.userId = 1
+                        db.add(new_notif)
+                        
                         db.commit()
                 finally:
                     db.close()
@@ -352,6 +390,38 @@ async def scan_stream(
             yield {"data": json.dumps({"type": "error", "message": str(e)})}
             
     return EventSourceResponse(event_generator())
+
+# -- Notifications --
+@app.get("/api/notifications")
+def get_notifications(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    notifications = db.query(models.Notification).filter(models.Notification.userId == user.id).order_by(models.Notification.createdAt.desc()).limit(50).all()
+    return notifications
+
+@app.post("/api/notifications/read")
+def mark_notifications_read(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    db.query(models.Notification).filter(models.Notification.userId == user.id).update({"unread": False})
+    db.commit()
+    return {"message": "Notifications marked as read"}
+
+# -- Reports --
+@app.get("/api/reports/analytics")
+def get_report_analytics(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    # simple mock logic based on actual scans for the UI
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    scans = db.query(models.Scan).filter(models.Scan.createdAt >= thirty_days_ago).all()
+    
+    crit = sum(s.critical for s in scans)
+    high = sum(s.high for s in scans)
+    med = sum(s.secrets for s in scans) # repurposing secrets as medium for simple demo distribution
+    
+    return {
+        "trend": [max(5, s.critical + s.high) for s in scans[-10:]] if scans else [10, 20, 15, 25, 20],
+        "severity": {
+            "critical": crit or 12,
+            "high": high or 25,
+            "medium": med or 43
+        }
+    }
 
 import httpx
 
@@ -394,7 +464,7 @@ async def chat(req: schemas.ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ai-review")
-async def ai_review(req: schemas.AIReviewRequest):
+async def ai_review(req: schemas.AIReviewRequest, user: models.User = Depends(get_current_user)):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="Gemini API Key missing")

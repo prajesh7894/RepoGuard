@@ -2,45 +2,45 @@ import { useState, useEffect, useMemo } from 'react';
 import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const [repos, setRepos] = useState<any[]>([]);
   const [scans, setScans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [userName, setUserName] = useState('Alex');
+  const { user, token } = useAuth();
+  const userName = user?.name ? user.name.split(' ')[0] : (user?.email?.split('@')[0] || 'User');
 
   useEffect(() => {
-    try {
-      const userStr = localStorage.getItem('repoguard_user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user && user.name) {
-          setUserName(user.name.split(' ')[0]);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse user from localStorage');
-    }
-    
     const fetchData = async () => {
       try {
+        const headers = { 'Authorization': `Bearer ${token}` };
         const [reposRes, scansRes] = await Promise.all([
-          fetch('/api/repos'),
-          fetch('/api/scans')
+          fetch('/api/repos', { headers }),
+          fetch('/api/scans', { headers })
         ]);
+        
+        if (!reposRes.ok || !scansRes.ok) throw new Error("Failed to fetch data");
+        
         const reposData = await reposRes.json();
         const scansData = await scansRes.json();
-        setRepos(reposData);
-        setScans(scansData);
+        
+        // Ensure they are arrays
+        setRepos(Array.isArray(reposData) ? reposData : []);
+        setScans(Array.isArray(scansData) ? scansData : []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        setRepos([]);
+        setScans([]);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    if (token) {
+      fetchData();
+    }
+  }, [token]);
 
   const totalCritical = repos.reduce((sum, repo) => sum + (repo.findings?.crit || 0), 0);
   const totalHigh = repos.reduce((sum, repo) => sum + (repo.findings?.high || 0), 0);

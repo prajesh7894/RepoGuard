@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, LogIn, ArrowRight, ShieldCheck } from 'lucide-react';
 import { View } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LoginProps {
   setView: (view: View) => void;
@@ -12,6 +13,7 @@ export default function Login({ setView }: LoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,12 +30,11 @@ export default function Login({ setView }: LoginProps) {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to login');
+        throw new Error(data.detail || data.error || 'Failed to login');
       }
 
-      // Save token to localStorage
-      localStorage.setItem('repoguard_token', data.token);
-      localStorage.setItem('repoguard_user', JSON.stringify(data.user));
+      // Use AuthContext login instead of direct localStorage
+      login(data.token, data.user);
       
       // Navigate to dashboard
       setView('dashboard');

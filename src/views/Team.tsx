@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Mail, Shield, MoreVertical, Loader2, PlusCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Team() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [org, setOrg] = useState<any>(null);
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchTeam();
@@ -14,12 +16,16 @@ export default function Team() {
   async function fetchTeam() {
     setLoading(true);
     try {
-      const orgsRes = await fetch('/api/organizations');
+      const orgsRes = await fetch('/api/organizations', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (orgsRes.ok) {
         const orgs = await orgsRes.json();
         if (orgs.length > 0) {
           setOrg(orgs[0]);
-          const membersRes = await fetch(`/api/organizations/${orgs[0].id}/members`);
+          const membersRes = await fetch(`/api/organizations/${orgs[0].id}/members`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           if (membersRes.ok) {
             const membersData = await membersRes.json();
             setMembers(membersData);
@@ -38,7 +44,10 @@ export default function Team() {
     try {
        const res = await fetch('/api/organizations', {
          method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
+         headers: { 
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`
+         },
          body: JSON.stringify({ name: 'My Workspace' })
        });
        if (res.ok) {

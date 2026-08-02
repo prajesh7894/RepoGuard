@@ -29,7 +29,7 @@ export default function Register({ setView }: RegisterProps) {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to register');
+        throw new Error(data.detail || data.error || 'Failed to register');
       }
 
       // Registration successful, navigate to login

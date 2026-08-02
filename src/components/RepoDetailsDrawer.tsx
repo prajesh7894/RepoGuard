@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { X, ShieldAlert, Code, ExternalLink, GitBranch, Download, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import PdfReportTemplate from './PdfReportTemplate';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClose: () => void }) {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [aiReviews, setAiReviews] = useState<Record<number, any>>({});
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
+  const { token } = useAuth();
 
   if (!repo) return null;
 
@@ -17,7 +19,10 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
     try {
       const response = await fetch('/api/ai-review', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ code: codeSnippet })
       });
       const data = await response.json();

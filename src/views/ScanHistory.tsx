@@ -1,24 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Download, ChevronDown, MoreHorizontal, CheckCircle2, XCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ScanHistory() {
   const [scans, setScans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { token } = useAuth();
+
   useEffect(() => {
     const fetchScans = async () => {
       try {
-        const res = await fetch('/api/scans');
+        const res = await fetch('/api/scans', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch scans");
         const data = await res.json();
-        setScans(data);
+        setScans(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to fetch scans:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchScans();
-  }, []);
+    if (token) {
+      fetchScans();
+    }
+  }, [token]);
 
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">

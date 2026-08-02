@@ -1,5 +1,6 @@
-import { Sparkles, Bell, LayoutGrid, Search, User } from 'lucide-react';
+import { Sparkles, Bell, LogOut, Search, User } from 'lucide-react';
 import { View } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   onOpenAiAssistant?: () => void;
@@ -7,6 +8,8 @@ interface HeaderProps {
 }
 
 export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
+  const { user, logout } = useAuth();
+  
   return (
     <div className="fixed top-4 right-4 left-4 md:left-[272px] z-40">
       <header className="glass-panel text-primary font-body-sm text-body-sm h-14 rounded-full flex items-center justify-between px-6">
@@ -36,11 +39,11 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
               <button className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-variant/50 transition-colors cursor-pointer">
                   <Bell size={18} />
               </button>
-              <button className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-variant/50 transition-colors cursor-pointer">
-                  <LayoutGrid size={18} />
+              <button onClick={logout} title="Log out" className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-red-400 hover:bg-surface-variant/50 transition-colors cursor-pointer">
+                  <LogOut size={18} />
               </button>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary ml-2 flex items-center justify-center text-background font-bold text-sm cursor-pointer">
-                  A
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary ml-2 flex items-center justify-center text-background font-bold text-sm cursor-pointer uppercase">
+                  {user?.name ? user.name.charAt(0) : (user?.email ? user.email.charAt(0) : 'U')}
               </div>
           </div>
         </div>

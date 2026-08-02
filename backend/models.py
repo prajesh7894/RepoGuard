@@ -42,11 +42,26 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     name = Column(String, nullable=True)
+    preferences = Column(String, nullable=True)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     sessions = relationship("Session", back_populates="user")
     organizations = relationship("OrganizationMember", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
+
+class Notification(Base):
+    __tablename__ = "Notification"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    userId = Column(Integer, ForeignKey("User.id"))
+    type = Column(String) # 'critical', 'success', 'info', 'warning', 'system'
+    title = Column(String)
+    message = Column(String)
+    unread = Column(Boolean, default=True)
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications")
 
 class Session(Base):
     __tablename__ = "Session"

@@ -1,17 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Shield, Bell, Github, Key, Users, Webhook } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Settings() {
+  const { token, user } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'default');
+  const [theme, setTheme] = useState('default');
 
-  const handleThemeChange = (newTheme: string) => {
+  useEffect(() => {
+    if (user?.preferences) {
+      try {
+        const prefs = JSON.parse(user.preferences);
+        if (prefs.theme) {
+          setTheme(prefs.theme);
+        }
+      } catch (e) {}
+    }
+  }, [user]);
+
+  const handleThemeChange = async (newTheme: string) => {
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
     if (newTheme === 'default') {
       document.body.removeAttribute('data-theme');
     } else {
       document.body.setAttribute('data-theme', newTheme);
+    }
+
+    if (token) {
+      try {
+        let prefs: any = {};
+        if (user?.preferences) {
+          prefs = JSON.parse(user.preferences);
+        }
+        prefs.theme = newTheme;
+        
+        await fetch('/api/me/preferences', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ preferences: JSON.stringify(prefs) })
+        });
+      } catch (err) {
+        console.error("Failed to save theme", err);
+      }
     }
   };
 

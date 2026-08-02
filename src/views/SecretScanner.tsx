@@ -1,13 +1,57 @@
+import { useEffect, useState } from 'react';
 import { ShieldAlert, Search, Filter, Key, CheckCircle2, AlertTriangle, ExternalLink, MoreVertical } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SecretScanner() {
-  const secrets = [
-    { id: 'SEC-001', repo: 'acme-corp/payment-gateway', type: 'AWS Access Key', file: 'src/config/aws.ts', line: 12, severity: 'critical', date: '2 hours ago', status: 'open' },
-    { id: 'SEC-002', repo: 'acme-corp/user-auth-service', type: 'JWT Secret', file: '.env.production', line: 4, severity: 'high', date: 'Yesterday', status: 'open' },
-    { id: 'SEC-003', repo: 'frontend-webapp', type: 'Stripe API Key', file: 'src/utils/stripe.ts', line: 42, severity: 'critical', date: '3 days ago', status: 'resolved' },
-    { id: 'SEC-004', repo: 'data-pipeline-etl', type: 'GCP Service Account', file: 'config/gcp.json', line: 1, severity: 'high', date: '1 week ago', status: 'open' },
-    { id: 'SEC-005', repo: 'acme-corp/payment-gateway', type: 'RSA Private Key', file: 'certs/private.pem', line: 1, severity: 'critical', date: '2 weeks ago', status: 'ignored' },
-  ];
+  const { token } = useAuth();
+  const [secrets, setSecrets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchScans = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/scans', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const scans = await res.json();
+          let allSecrets: any[] = [];
+          scans.forEach((scan: any) => {
+            if (scan.findingsDetail) {
+              try {
+                const findings = JSON.parse(scan.findingsDetail);
+                const secretFindings = findings.filter((f: any) => 
+                  f.type?.toLowerCase().includes('secret')
+                );
+                
+                secretFindings.forEach((f: any, i: number) => {
+                  allSecrets.push({
+                    id: `SEC-${scan.id}-${i}`,
+                    repo: scan.repository?.name || 'Unknown',
+                    type: f.type,
+                    file: f.file,
+                    line: f.line,
+                    severity: f.severity.toLowerCase(),
+                    date: new Date(scan.createdAt).toLocaleDateString(),
+                    status: 'open'
+                  });
+                });
+              } catch (e) {}
+            }
+          });
+          setSecrets(allSecrets);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchScans();
+  }, [token]);
+
+  const criticalCount = secrets.filter(s => s.severity === 'critical').length;
 
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
@@ -27,15 +71,15 @@ export default function SecretScanner() {
             <Key size={64} />
           </div>
           <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-2">Total Exposed Secrets</span>
-          <span className="font-display-lg text-4xl font-bold text-on-surface">24</span>
-          <span className="text-xs text-warning mt-2 flex items-center gap-1"><AlertTriangle size={12} /> +3 this week</span>
+          <span className="font-display-lg text-4xl font-bold text-on-surface">{secrets.length}</span>
+          <span className="text-xs text-warning mt-2 flex items-center gap-1"><AlertTriangle size={12} /> Active findings</span>
         </div>
         <div className="glass-panel p-6 rounded-xl border border-outline-variant/30 flex flex-col relative overflow-hidden">
            <div className="absolute top-0 right-0 p-4 opacity-10 text-critical">
             <ShieldAlert size={64} />
           </div>
           <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-2">Critical Severity</span>
-          <span className="font-display-lg text-4xl font-bold text-critical">8</span>
+          <span className="font-display-lg text-4xl font-bold text-critical">{criticalCount}</span>
           <span className="text-xs text-on-surface-variant mt-2">Requires immediate rotation</span>
         </div>
         <div className="glass-panel p-6 rounded-xl border border-outline-variant/30 flex flex-col relative overflow-hidden">
@@ -43,7 +87,7 @@ export default function SecretScanner() {
             <CheckCircle2 size={64} />
           </div>
           <span className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider mb-2">Resolved</span>
-          <span className="font-display-lg text-4xl font-bold text-success">156</span>
+          <span className="font-display-lg text-4xl font-bold text-success">0</span>
           <span className="text-xs text-success mt-2">Historically mitigated</span>
         </div>
       </div>
@@ -78,7 +122,15 @@ export default function SecretScanner() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20 text-sm">
-              {secrets.map((secret) => (
+              {loading ? (
+                 <tr>
+                    <td colSpan={5} className="p-12 text-center text-on-surface-variant">Loading secrets...</td>
+                 </tr>
+              ) : secrets.length === 0 ? (
+                 <tr>
+                    <td colSpan={5} className="p-12 text-center text-on-surface-variant">No secrets found in recent scans.</td>
+                 </tr>
+              ) : secrets.map((secret) => (
                 <tr key={secret.id} className="hover:bg-surface-variant/20 transition-colors">
                   <td className="p-4">
                     <div className="font-medium text-on-surface mb-1">{secret.type}</div>
@@ -96,7 +148,7 @@ export default function SecretScanner() {
                     {secret.severity === 'critical' ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-critical-subtle text-critical border border-critical/20">CRITICAL</span>
                     ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-warning-subtle text-warning border border-warning/20">HIGH</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-warning-subtle text-warning border border-warning/20">{secret.severity.toUpperCase()}</span>
                     )}
                   </td>
                   <td className="p-4">

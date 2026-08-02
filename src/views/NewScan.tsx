@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Package, Link as LinkIcon, Lock, Unlock, Network, Brain, History, Check, Info, Rocket, FolderCode, CheckCircle2, XCircle, Terminal } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import { View } from '../types';
 
 export default function NewScan({ setView }: { setView?: (view: View) => void }) {
@@ -8,6 +9,7 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
   const [scanProgress, setScanProgress] = useState(0);
   const [scanLogs, setScanLogs] = useState<string[]>([]);
   const [repoUrl, setRepoUrl] = useState('');
+  const { token } = useAuth();
   const [scanModules, setScanModules] = useState({
     secret: true,
     dependency: true,
@@ -44,7 +46,10 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
         // 1. Create Repo in DB so it shows up in dashboard
         const res = await fetch('/api/repos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ url })
         });
         const repo = await res.json();

@@ -21,7 +21,7 @@ export default function Landing({ setView }: LandingProps) {
             <button onClick={() => setView('docs')} className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer">Docs</button>
           </nav>
           <div className="flex items-center gap-4">
-            <a className="hidden md:block font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors" href="#">Login</a>
+            <button onClick={() => setView('login')} className="hidden md:block font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors cursor-pointer">Login</button>
             <button 
                 onClick={() => setView('login')}
                 className="bg-primary-container text-white px-4 py-1.5 rounded-full font-body-sm text-body-sm hover:bg-primary-container/90 transition-all shadow-lg shadow-primary-container/20 cursor-pointer"

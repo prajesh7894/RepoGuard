@@ -52,3 +52,18 @@ class OrganizationMemberResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class NotificationResponse(BaseModel):
+    id: int
+    userId: int
+    type: str
+    title: str
+    message: str
+    unread: bool
+    createdAt: datetime.datetime
+
+    class Config:
+        orm_mode = True
+
+class PreferencesUpdate(BaseModel):
+    preferences: str

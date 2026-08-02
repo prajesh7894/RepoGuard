@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Brain, Code, Play, ShieldAlert, CheckCircle2, ChevronRight, Zap, RefreshCw } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AiSecurityReview() {
   const [code, setCode] = useState(`app.post('/api/users', (req, res) => {
@@ -18,6 +19,7 @@ export default function AiSecurityReview() {
 });`);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any | null>(null);
+  const { token } = useAuth();
 
   const analyzeCode = async () => {
     setIsAnalyzing(true);
@@ -27,7 +29,8 @@ export default function AiSecurityReview() {
       const res = await fetch('/api/ai-review', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ code })
       });

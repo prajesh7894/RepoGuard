@@ -27,10 +27,13 @@ import Solutions from './views/Solutions';
 import Pricing from './views/Pricing';
 import Docs from './views/Docs';
 
-export default function App() {
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+function MainApp() {
   const [currentView, setCurrentView] = useState<View>('landing');
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -47,6 +50,17 @@ export default function App() {
       }, 10);
     }
   }, [currentView]);
+
+  // Route Guard
+  useEffect(() => {
+    if (!isLoading && !user && !['landing', 'login', 'register'].includes(currentView)) {
+      setCurrentView('login');
+    }
+  }, [currentView, user, isLoading]);
+
+  if (isLoading) {
+    return <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground">Loading...</div>;
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-background flex">
@@ -93,6 +107,14 @@ export default function App() {
 
       <AiAssistantDrawer isOpen={isAiAssistantOpen} onClose={() => setIsAiAssistantOpen(false)} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
 
