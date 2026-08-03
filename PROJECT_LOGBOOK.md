@@ -142,6 +142,14 @@
   - Ensured JWT auth tokens correctly flow through all new API routes, and successfully resolved complex schema mismatch bugs during integration.
 - **Outcome:** The prototype evolved into a cohesive, professional-grade application successfully exchanging real telemetry and security findings from end-to-end.
 
+## 📅 Day 20: JSON Data Export Engine
+**Date:** `03/08/2026` *(Today)*
+- **Tasks:**
+  - Designed and deployed the `GET /api/scans/{id}/export/json` endpoint in FastAPI.
+  - Implemented correct HTTP headers (`Content-Disposition: attachment`) for robust, native browser file downloads.
+  - Re-architected frontend components (`Reports.tsx`, `ScanHistory.tsx`) to directly interface with the backend export route, deprecating fragile client-side JSON blob generation.
+- **Outcome:** A robust data egress point was established, enabling CI/CD integrations and SIEM ingestions of raw scanner telemetry.
+
 ---
 
 ### 🎯 Next Planned Milestones

@@ -43,15 +43,7 @@ export default function Reports() {
     fetchAnalytics();
   }, [token]);
 
-  const handleDownload = (report: any) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report.scan, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${report.name.replace(/\s+/g, '_')}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
+
 
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-6xl mx-auto">
@@ -145,9 +137,9 @@ export default function Reports() {
                   </td>
                   <td className="p-4 text-on-surface-variant">{report.size}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => handleDownload(report)} className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex">
+                    <a href={`/api/scans/${report.scan.id}/export/json`} download className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex" title="Download JSON Report">
                       <Download size={18} />
-                    </button>
+                    </a>
                   </td>
                 </tr>
               ))}

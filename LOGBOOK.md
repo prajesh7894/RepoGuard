@@ -135,8 +135,11 @@
 - Replaced all frontend hardcoded mock data across Scanners (Secrets & Dependencies), Reports, and Notification views with functional API calls fetching dynamic, real-time data.
 - Ensured JWT auth tokens correctly flow through all new API routes, and successfully resolved complex schema mismatch bugs during integration.
 
-## 📅 Date: 03/08/2026 *(Planned)*
-- Create a backend endpoint to export a specific scan as raw JSON.
+## 📅 Date: 03/08/2026
+**Phase:** Export System (JSON)
+**Tasks Completed:**
+- Created a backend endpoint (`/api/scans/{id}/export/json`) to export a specific scan as raw JSON with proper HTTP attachment headers.
+- Wired the frontend "Scan History" and "Reports" download buttons to natively use the new backend endpoint instead of generating blobs client-side.
 
 ## 📅 Date: 04/08/2026 *(Planned)*
 - Create a backend endpoint to export scan findings as a CSV file.

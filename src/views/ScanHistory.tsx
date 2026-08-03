@@ -121,10 +121,15 @@ export default function ScanHistory() {
                       {scan.critical === 0 && scan.high === 0 && <span className="text-xs text-on-surface-variant">-</span>}
                     </div>
                   </td>
-                  <td className="p-4 text-right">
-                    <button className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-variant">
+                  <td className="p-4 text-right flex justify-end gap-1">
+                    <a 
+                      href={`/api/scans/${scan.id}/export/json`} 
+                      download
+                      className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-variant inline-block"
+                      title="Download JSON Report"
+                    >
                       <Download size={16} />
-                    </button>
+                    </a>
                     <button className="p-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer rounded-full hover:bg-surface-variant">
                       <MoreHorizontal size={16} />
                     </button>

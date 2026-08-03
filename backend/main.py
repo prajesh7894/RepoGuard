@@ -228,6 +228,35 @@ def get_scans(db: Session = Depends(get_db), user: models.User = Depends(get_cur
         })
     return result
 
+from fastapi.responses import Response
+
+@app.get("/api/scans/{scan_id}/export/json")
+def export_scan_json(scan_id: int, db: Session = Depends(get_db)):
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    # We can reconstruct a detailed JSON object
+    export_data = {
+        "id": scan.id,
+        "repoId": scan.repoId,
+        "repository": scan.repository.name if scan.repository else "Unknown",
+        "url": scan.repository.url if scan.repository else "Unknown",
+        "critical": scan.critical,
+        "high": scan.high,
+        "secrets": scan.secrets,
+        "status": scan.status,
+        "createdAt": scan.createdAt.isoformat() if scan.createdAt else None,
+        "findings": json.loads(scan.findingsDetail) if scan.findingsDetail else []
+    }
+    
+    json_str = json.dumps(export_data, indent=2)
+    return Response(
+        content=json_str,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=repoguard_scan_{scan_id}.json"}
+    )
+
 from fastapi import BackgroundTasks
 from database import SessionLocal
 import threading
