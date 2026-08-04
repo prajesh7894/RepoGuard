@@ -141,8 +141,11 @@
 - Created a backend endpoint (`/api/scans/{id}/export/json`) to export a specific scan as raw JSON with proper HTTP attachment headers.
 - Wired the frontend "Scan History" and "Reports" download buttons to natively use the new backend endpoint instead of generating blobs client-side.
 
-## 📅 Date: 04/08/2026 *(Planned)*
-- Create a backend endpoint to export scan findings as a CSV file.
+## 📅 Date: 04/08/2026
+**Phase:** Export System (CSV)
+**Tasks Completed:**
+- Created backend endpoints (`/api/scans/export/csv` and `/api/scans/{id}/export/csv`) to export scan history and detailed findings as CSV files.
+- Wired frontend buttons to use the new native CSV download endpoints.
 
 ## 📅 Date: 05/08/2026 *(Planned)*
 - Implement PDF generation logic on the backend for formal reports.

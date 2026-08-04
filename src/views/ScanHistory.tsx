@@ -35,10 +35,14 @@ export default function ScanHistory() {
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Scan History</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">Review past security audits and export compliance reports.</p>
         </div>
-        <button className="flex items-center gap-2 bg-surface-variant text-on-surface px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-surface-variant/80 transition-colors border border-outline-variant/30 cursor-pointer">
+        <a 
+          href="/api/scans/export/csv"
+          download
+          className="flex items-center gap-2 bg-surface-variant text-on-surface px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-surface-variant/80 transition-colors border border-outline-variant/30 cursor-pointer"
+        >
           <Download size={18} />
           Export All (CSV)
-        </button>
+        </a>
       </div>
 
       <div className="glass-panel rounded-xl flex flex-col overflow-hidden shadow-lg border border-outline-variant/30">
@@ -130,9 +134,14 @@ export default function ScanHistory() {
                     >
                       <Download size={16} />
                     </a>
-                    <button className="p-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer rounded-full hover:bg-surface-variant">
-                      <MoreHorizontal size={16} />
-                    </button>
+                    <a 
+                      href={`/api/scans/${scan.id}/export/csv`} 
+                      download
+                      className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-variant inline-block"
+                      title="Download CSV Report"
+                    >
+                      <span className="text-[10px] font-bold">CSV</span>
+                    </a>
                   </td>
                 </tr>
               )})}

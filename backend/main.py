@@ -14,6 +14,8 @@ from sse_starlette.sse import EventSourceResponse
 from google import genai
 import re
 import bcrypt
+import csv
+import io
 
 import models
 import schemas
@@ -255,6 +257,59 @@ def export_scan_json(scan_id: int, db: Session = Depends(get_db)):
         content=json_str,
         media_type="application/json",
         headers={"Content-Disposition": f"attachment; filename=repoguard_scan_{scan_id}.json"}
+    )
+
+@app.get("/api/scans/export/csv")
+def export_all_scans_csv(db: Session = Depends(get_db)):
+    scans = db.query(models.Scan).order_by(models.Scan.createdAt.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Scan ID", "Repository", "Date", "Status", "Critical", "High", "Secrets"])
+    
+    for scan in scans:
+        repo_name = scan.repository.name if scan.repository else "Unknown"
+        writer.writerow([
+            f"SCN-{str(scan.id).zfill(4)}",
+            repo_name,
+            scan.createdAt.isoformat() if scan.createdAt else "",
+            scan.status,
+            scan.critical,
+            scan.high,
+            scan.secrets
+        ])
+        
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=repoguard_all_scans.csv"}
+    )
+
+@app.get("/api/scans/{scan_id}/export/csv")
+def export_scan_csv(scan_id: int, db: Session = Depends(get_db)):
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    findings = json.loads(scan.findingsDetail) if scan.findingsDetail else []
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Type", "Severity", "File", "Line", "Description"])
+    
+    for f in findings:
+        writer.writerow([
+            f.get("title", ""),
+            f.get("severity", ""),
+            f.get("file", ""),
+            f.get("line", ""),
+            f.get("description", "")
+        ])
+        
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=repoguard_scan_{scan_id}_findings.csv"}
     )
 
 from fastapi import BackgroundTasks

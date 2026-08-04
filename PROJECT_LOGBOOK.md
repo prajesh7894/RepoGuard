@@ -150,6 +150,14 @@
   - Re-architected frontend components (`Reports.tsx`, `ScanHistory.tsx`) to directly interface with the backend export route, deprecating fragile client-side JSON blob generation.
 - **Outcome:** A robust data egress point was established, enabling CI/CD integrations and SIEM ingestions of raw scanner telemetry.
 
+## 📅 Day 21: CSV Data Export Engine
+**Date:** `04/08/2026` *(Today)*
+- **Tasks:**
+  - Designed and deployed `GET /api/scans/export/csv` and `GET /api/scans/{id}/export/csv` endpoints in FastAPI.
+  - Formatted scan history and detailed vulnerability findings into RFC 4180 compliant tabular CSV data.
+  - Wired frontend download links in `ScanHistory.tsx` to directly trigger native browser downloads using the backend.
+- **Outcome:** A human-readable data egress point was established, enabling security teams to export, filter, and audit vulnerabilities within spreadsheet applications like Excel.
+
 ---
 
 ### 🎯 Next Planned Milestones
