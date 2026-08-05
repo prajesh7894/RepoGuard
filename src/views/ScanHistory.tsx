@@ -142,6 +142,14 @@ export default function ScanHistory() {
                     >
                       <span className="text-[10px] font-bold">CSV</span>
                     </a>
+                    <a 
+                      href={`/api/scans/${scan.id}/export/pdf`} 
+                      download
+                      className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-variant inline-block"
+                      title="Download PDF Report"
+                    >
+                      <span className="text-[10px] font-bold">PDF</span>
+                    </a>
                   </td>
                 </tr>
               )})}

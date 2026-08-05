@@ -30,7 +30,7 @@ export default function Reports() {
              id: `rep-${scan.id}`,
              name: `Scan Report - ${scan.repository?.name || 'Unknown'}`,
              date: new Date(scan.createdAt).toLocaleDateString(),
-             type: 'JSON',
+             type: 'PDF',
              size: '12 KB',
              scan: scan
           }));
@@ -137,7 +137,7 @@ export default function Reports() {
                   </td>
                   <td className="p-4 text-on-surface-variant">{report.size}</td>
                   <td className="p-4 text-right">
-                    <a href={`/api/scans/${report.scan.id}/export/json`} download className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex" title="Download JSON Report">
+                    <a href={`/api/scans/${report.scan.id}/export/pdf`} download className="p-2 hover:bg-surface-variant text-on-surface-variant hover:text-primary rounded transition-colors cursor-pointer inline-flex" title="Download PDF Report">
                       <Download size={18} />
                     </a>
                   </td>
