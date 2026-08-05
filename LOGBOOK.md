@@ -147,8 +147,12 @@
 - Created backend endpoints (`/api/scans/export/csv` and `/api/scans/{id}/export/csv`) to export scan history and detailed findings as CSV files.
 - Wired frontend buttons to use the new native CSV download endpoints.
 
-## 📅 Date: 05/08/2026 *(Planned)*
-- Implement PDF generation logic on the backend for formal reports.
+## 📅 Date: 05/08/2026
+**Phase:** Export System (PDF)
+**Tasks Completed:**
+- Implemented robust PDF generation logic on the backend using the `fpdf2` library.
+- Designed a highly professional, stylized PDF report featuring a dark corporate header, structured grids, and colored severity badges for vulnerabilities.
+- Rewired frontend UI download buttons in `ScanHistory.tsx` and `Reports.tsx` to interface natively with the new FastAPI PDF endpoint.
 
 ## 📅 Date: 06/08/2026 *(Planned)*
 - Wire frontend buttons to download the generated PDF and CSV files.

@@ -158,6 +158,15 @@
   - Wired frontend download links in `ScanHistory.tsx` to directly trigger native browser downloads using the backend.
 - **Outcome:** A human-readable data egress point was established, enabling security teams to export, filter, and audit vulnerabilities within spreadsheet applications like Excel.
 
+## 📅 Day 22: Backend PDF Report Engine
+**Date:** `05/08/2026` *(Today)*
+- **Tasks:**
+  - Installed and configured `fpdf2` in the Python backend to replace client-side PDF generation.
+  - Developed `GET /api/scans/{id}/export/pdf` in FastAPI to dynamically render structured PDF reports from scan data.
+  - Engineered a premium visual aesthetic for the PDF including dark-mode headers, severity color badges, and structured executive summaries.
+  - Refactored `ScanHistory.tsx` and `Reports.tsx` UI components to trigger native backend PDF downloads.
+- **Outcome:** RepoGuard now offers enterprise-grade, professional PDF compliance reports generated securely and performantly entirely on the backend.
+
 ---
 
 ### 🎯 Next Planned Milestones
