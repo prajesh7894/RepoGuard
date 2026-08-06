@@ -154,11 +154,12 @@
 - Designed a highly professional, stylized PDF report featuring a dark corporate header, structured grids, and colored severity badges for vulnerabilities.
 - Rewired frontend UI download buttons in `ScanHistory.tsx` and `Reports.tsx` to interface natively with the new FastAPI PDF endpoint.
 
-## 📅 Date: 06/08/2026 *(Planned)*
-- Wire frontend buttons to download the generated PDF and CSV files.
-
-## 📅 Date: 07/08/2026 *(Planned)* - Phase 3: Scanner Expansion & Heuristics
-- Add Regex rules for detecting hardcoded database connection strings.
+## 📅 Date: 06/08/2026
+**Phase:** Scanner Expansion & Heuristics (Phase 3)
+**Tasks Completed:**
+- Expanded the regex scanning engine (`backend/scanner/plugins/regex.py`) to actively detect hardcoded database connection strings.
+- Added heuristics for MongoDB, PostgreSQL, MySQL, Redis, and RabbitMQ URIs.
+- Created dummy integration tests in the backend to successfully verify the detection capabilities.
 
 ## 📅 Date: 08/08/2026 *(Planned)*
 - Add Regex rules specific to Python (e.g., detecting Flask `debug=True`, unsafe `pickle` usage).

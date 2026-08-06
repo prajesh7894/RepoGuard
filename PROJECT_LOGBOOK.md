@@ -167,6 +167,14 @@
   - Refactored `ScanHistory.tsx` and `Reports.tsx` UI components to trigger native backend PDF downloads.
 - **Outcome:** RepoGuard now offers enterprise-grade, professional PDF compliance reports generated securely and performantly entirely on the backend.
 
+## 📅 Day 23: Database Connection String Heuristics
+**Date:** `06/08/2026` *(Today)*
+- **Tasks:**
+  - Upgraded the security scanner engine (`backend/scanner/plugins/regex.py`).
+  - Added new `CRITICAL` severity heuristics to detect leaked connection URIs for MongoDB, PostgreSQL, MySQL, Redis, and AMQP.
+  - Deployed dummy secrets (`test_db_secrets.py`) to successfully validate the end-to-end scanning and reporting flow.
+- **Outcome:** RepoGuard is now capable of proactively detecting and blocking the deployment of high-risk exposed database credentials, further securing infrastructure.
+
 ---
 
 ### 🎯 Next Planned Milestones
