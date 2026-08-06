@@ -11,6 +11,12 @@ SECRET_PATTERNS = [
     r'AIza[0-9A-Za-z-_]{35}', # Google API Key
     r'SK[0-9a-fA-F]{32}', # Twilio API Key
     r'-----BEGIN (RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----', # Private Keys
+    # Database Connection Strings
+    r'(?i)mongodb(?:\+srv)?:\/\/[^\s]+', # MongoDB URIs
+    r'(?i)postgres(ql)?:\/\/[^\s]+', # PostgreSQL URIs
+    r'(?i)mysql:\/\/[^\s]+', # MySQL URIs
+    r'(?i)rediss?:\/\/[^\s]+', # Redis URIs
+    r'(?i)amqps?:\/\/[^\s]+', # RabbitMQ/AMQP URIs
 ]
 
 def regex_scan(repo_path: str):
