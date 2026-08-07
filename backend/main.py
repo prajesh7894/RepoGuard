@@ -226,6 +226,7 @@ def get_scans(db: Session = Depends(get_db), user: models.User = Depends(get_cur
             "high": scan.high,
             "secrets": scan.secrets,
             "status": scan.status,
+            "findingsDetail": scan.findingsDetail,
             "createdAt": scan.createdAt,
             "repository": {"name": scan.repository.name if scan.repository else "Unknown"}
         })

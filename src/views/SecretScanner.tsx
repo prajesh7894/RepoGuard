@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert, Search, Filter, Key, CheckCircle2, AlertTriangle, ExternalLink, MoreVertical } from 'lucide-react';
+import { ShieldAlert, Search, Filter, Key, CheckCircle2, AlertTriangle, ExternalLink, MoreVertical, Bot } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { AIChatPanel } from '../components/AIChatPanel';
 
 export default function SecretScanner() {
   const { token } = useAuth();
   const [secrets, setSecrets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatFinding, setChatFinding] = useState<any>(null);
 
   useEffect(() => {
     const fetchScans = async () => {
@@ -21,10 +24,9 @@ export default function SecretScanner() {
             if (scan.findingsDetail) {
               try {
                 const findings = JSON.parse(scan.findingsDetail);
-                const secretFindings = findings.filter((f: any) => 
-                  f.type?.toLowerCase().includes('secret')
-                );
+                const secretFindings = findings;
                 
+
                 secretFindings.forEach((f: any, i: number) => {
                   allSecrets.push({
                     id: `SEC-${scan.id}-${i}`,
@@ -170,6 +172,14 @@ export default function SecretScanner() {
                   </td>
                   <td className="p-4 text-right">
                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => { 
+                            setChatFinding({ file: secret.file, line: secret.line, type: secret.type, match: '...' }); 
+                            setChatOpen(true); 
+                          }}
+                          className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-medium rounded transition-colors cursor-pointer border border-emerald-500/30 flex items-center gap-1">
+                           <Bot size={14} /> Ask AI
+                        </button>
                         {secret.status === 'open' && (
                            <button className="px-3 py-1.5 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-xs font-medium rounded transition-colors cursor-pointer border border-outline-variant/30">
                               Revoke
@@ -186,6 +196,12 @@ export default function SecretScanner() {
           </table>
         </div>
       </div>
+      
+      <AIChatPanel 
+        isOpen={chatOpen} 
+        onClose={() => setChatOpen(false)} 
+        finding={chatFinding} 
+      />
     </div>
   );
 }

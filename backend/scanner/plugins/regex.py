@@ -19,6 +19,15 @@ SECRET_PATTERNS = [
     r'(?i)amqps?:\/\/[^\s]+', # RabbitMQ/AMQP URIs
 ]
 
+PYTHON_PATTERNS = [
+    (r'(?i)(app\.run\s*\(.*debug\s*=\s*True|DEBUG\s*=\s*True)', 'Debug Mode Enabled (Info Leak)', 'HIGH'),
+    (r'pickle\.(loads?)\s*\(', 'Insecure Deserialization (pickle)', 'CRITICAL'),
+    (r'yaml\.load\s*\(\s*[^,]+(,\s*Loader\s*=\s*yaml\.Loader)?\s*\)', 'Insecure Deserialization (yaml)', 'CRITICAL'),
+    (r'\beval\s*\(', 'Arbitrary Code Execution (eval)', 'HIGH'),
+    (r'\bexec\s*\(', 'Arbitrary Code Execution (exec)', 'HIGH'),
+    (r'(os\.system|subprocess\.(Popen|call|run))\s*\(\s*.*shell\s*=\s*True', 'Command Injection (shell=True)', 'CRITICAL'),
+]
+
 def regex_scan(repo_path: str):
     findings = []
     for root, dirs, files in os.walk(repo_path):
@@ -40,6 +49,17 @@ def regex_scan(repo_path: str):
                                     'type': 'Hardcoded Secret',
                                     'severity': 'CRITICAL'
                                 })
+                        
+                        if file.endswith('.py'):
+                            for pattern, desc, severity in PYTHON_PATTERNS:
+                                if re.search(pattern, line):
+                                    findings.append({
+                                        'file': os.path.relpath(filepath, repo_path).replace('\\', '/'),
+                                        'line': i + 1,
+                                        'match': line.strip()[:100],
+                                        'type': desc,
+                                        'severity': severity
+                                    })
             except Exception:
                 pass
     return findings
