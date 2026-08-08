@@ -8,7 +8,8 @@ export default function Repositories() {
   const [repos, setRepos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const [syncing, setSyncing] = useState(false);
 
   const fetchRepos = async () => {
     try {
@@ -29,6 +30,28 @@ export default function Repositories() {
   useEffect(() => {
     if (token) {
       fetchRepos();
+      
+      // Check for GitHub OAuth callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      if (code) {
+        setSyncing(true);
+        fetch('/api/auth/github/callback', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ code })
+        }).then(() => {
+          // Clean up URL and reload to fetch fresh user state
+          window.history.replaceState({}, document.title, window.location.pathname);
+          window.location.reload();
+        }).catch(err => {
+          console.error("GitHub link failed", err);
+          setSyncing(false);
+        });
+      }
     }
   }, [token]);
 
@@ -78,6 +101,10 @@ export default function Repositories() {
     }
   };
 
+  const handleSyncGitHub = () => {
+    window.location.href = '/api/auth/github';
+  };
+
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
@@ -85,10 +112,22 @@ export default function Repositories() {
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Repositories</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">Manage and monitor security posture across your connected codebases.</p>
         </div>
-        <button onClick={handleConnectNew} className="flex items-center gap-2 bg-primary-container text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-primary-container/20">
-          <Plus size={20} />
-          Connect New Repo
-        </button>
+        <div className="flex items-center gap-3">
+          {!user?.githubLinked && (
+            <button 
+              onClick={handleSyncGitHub} 
+              disabled={syncing}
+              className="flex items-center gap-2 bg-[#2ea043] text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-[#2c974b] transition-colors shadow-lg"
+            >
+              {syncing ? <RefreshCw className="animate-spin" size={20} /> : <div className="i-lucide-github" style={{width: 20, height: 20}}></div>}
+              {syncing ? "Syncing..." : "Sync with GitHub"}
+            </button>
+          )}
+          <button onClick={handleConnectNew} className="flex items-center gap-2 bg-primary-container text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-primary-container/20">
+            <Plus size={20} />
+            Connect New Repo
+          </button>
+        </div>
       </div>
 
       <div className="surface-1 rounded-xl p-4 mb-8 flex flex-wrap gap-4 items-center">

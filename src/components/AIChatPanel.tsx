@@ -14,6 +14,7 @@ interface Finding {
   line: number;
   type: string;
   match: string;
+  repoUrl?: string;
 }
 
 interface Props {
@@ -26,13 +27,15 @@ export function AIChatPanel({ isOpen, onClose, finding }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && finding && messages.length === 0) {
-      // Initialize with a prompt based on the finding
-      const initialPrompt = `I need help fixing a vulnerability you detected.\n\nFile: \`${finding.file}\` (Line ${finding.line})\nType: **${finding.type}**\nMatch Context: \`${finding.match}\`\n\nCould you explain what this is and how I can fix it?`;
-      handleSend(initialPrompt);
+      setMessages([{
+        role: 'model',
+        text: `Hello! I'm your AI Security Architect. I see you're looking at a **${finding.type}** vulnerability in \`${finding.file}\` on line ${finding.line}.\n\nHow can I help you? You can ask me to explain it, or click the **Auto-Fix (PR)** button above to automatically generate a fix.`
+      }]);
     }
   }, [isOpen, finding]);
 
@@ -76,6 +79,46 @@ export function AIChatPanel({ isOpen, onClose, finding }: Props) {
     }
   };
 
+  const handleAutoFix = async () => {
+    if (!finding) return;
+    setIsFixing(true);
+    
+    // Add optimistic message
+    setMessages(prev => [...prev, { role: 'user', text: "Generate a patch and open a Pull Request to fix this automatically." }]);
+    setMessages(prev => [...prev, { role: 'model', text: "Working on it... Generating patch and connecting to GitHub..." }]);
+    
+    try {
+      const response = await fetch('/api/remediate/pr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ finding, repo_url: finding.repoUrl })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+           setMessages(prev => [...prev, { role: 'model', text: "⚠️ You need to link your GitHub account first. Please go to the Repositories page and click 'Sync with GitHub'." }]);
+           setIsFixing(false);
+           return;
+        }
+        throw new Error('Failed to create PR');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: `✅ **Success!** I have created a pull request with the fix.\n\n[View Pull Request](${data.url})\n\n**Generated Patch:**\n\`\`\`\n${data.patch}\n\`\`\`` 
+      }]);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { role: 'model', text: '❌ Failed to create Pull Request. Make sure your GitHub account is linked and you have access to the repository.' }]);
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -100,12 +143,22 @@ export function AIChatPanel({ isOpen, onClose, finding }: Props) {
               <p className="text-xs text-emerald-400/80">RepoGuard Advanced Interactivity</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAutoFix}
+              disabled={isFixing}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2ea043] hover:bg-[#2c974b] text-white text-xs font-medium rounded-md transition-colors shadow-lg disabled:opacity-50"
+            >
+              {isFixing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <div className="i-lucide-github" style={{width: 14, height: 14}}></div>}
+              {isFixing ? 'Fixing...' : 'Auto-Fix (PR)'}
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}

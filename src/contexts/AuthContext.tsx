@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string | null;
   preferences?: string | null;
+  githubLinked?: boolean;
 }
 
 interface AuthContextType {

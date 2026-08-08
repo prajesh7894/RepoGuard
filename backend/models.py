@@ -43,6 +43,7 @@ class User(Base):
     password = Column(String)
     name = Column(String, nullable=True)
     preferences = Column(String, nullable=True)
+    githubToken = Column(String, nullable=True)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

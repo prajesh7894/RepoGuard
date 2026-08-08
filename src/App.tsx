@@ -30,7 +30,19 @@ import Docs from './views/Docs';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function MainApp() {
-  const [currentView, setCurrentView] = useState<View>('landing');
+  const getInitialView = (): View => {
+    const path = window.location.pathname.replace('/', '');
+    const validViews: View[] = [
+      'landing', 'login', 'register', 'dashboard', 'repositories', 
+      'new_scan', 'scan_history', 'ai_security_review', 'secret_scanner', 
+      'dependency_scanner', 'notifications', 'settings', 'help', 
+      'reports', 'integrations', 'team', 'product', 'solutions', 'pricing', 'docs'
+    ];
+    if (validViews.includes(path as View)) return path as View;
+    return 'landing';
+  };
+
+  const [currentView, setCurrentView] = useState<View>(getInitialView());
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { user, isLoading } = useAuth();

@@ -31,10 +31,12 @@ export default function SecretScanner() {
                   allSecrets.push({
                     id: `SEC-${scan.id}-${i}`,
                     repo: scan.repository?.name || 'Unknown',
+                    repoUrl: scan.repository?.url || '',
                     type: f.type,
                     file: f.file,
                     line: f.line,
                     severity: f.severity.toLowerCase(),
+                    match: f.match,
                     date: new Date(scan.createdAt).toLocaleDateString(),
                     status: 'open'
                   });
@@ -174,7 +176,7 @@ export default function SecretScanner() {
                      <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => { 
-                            setChatFinding({ file: secret.file, line: secret.line, type: secret.type, match: '...' }); 
+                            setChatFinding({ file: secret.file, line: secret.line, type: secret.type, match: secret.match || '...', repoUrl: secret.repoUrl }); 
                             setChatOpen(true); 
                           }}
                           className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-medium rounded transition-colors cursor-pointer border border-emerald-500/30 flex items-center gap-1">
