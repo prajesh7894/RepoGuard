@@ -196,6 +196,10 @@ async def github_callback(payload: dict, db: Session = Depends(get_db), user: mo
 
     return {"message": "GitHub linked successfully and repositories synced"}
 
+import base64
+import random
+import string
+
 class PRRequest(BaseModel):
     finding: dict
     repo_url: str
@@ -205,37 +209,111 @@ async def create_remediation_pr(req: PRRequest, user: models.User = Depends(get_
     if not user.githubToken:
         raise HTTPException(status_code=401, detail="GitHub not linked")
         
-    # Generate fix with AI
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="Gemini API Key missing")
         
-    finding_context = f"File: {req.finding.get('file')}\nLine: {req.finding.get('line')}\nType: {req.finding.get('type')}\nMatch: {req.finding.get('match')}"
-    
-    payload = {
-        "systemInstruction": {
-            "parts": [{"text": "You are an automated remediation bot. Given a vulnerability, output ONLY the valid replacement code for the affected file. Do not include markdown formatting or explanations. Output the direct code."}]
-        },
-        "contents": [{"role": "user", "parts": [{"text": f"Fix this vulnerability:\n\n{finding_context}"}]}]
+    owner_repo = req.repo_url.replace("https://github.com/", "").replace(".git", "")
+    api_base = f"https://api.github.com/repos/{owner_repo}"
+    file_path = req.finding.get('file', '')
+    if file_path.startswith('/'):
+        file_path = file_path[1:]
+        
+    headers = {
+        "Authorization": f"token {user.githubToken}",
+        "Accept": "application/vnd.github.v3+json"
     }
-    
+
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
+            # 1. Get original file content
+            file_resp = await client.get(f"{api_base}/contents/{file_path}", headers=headers)
+            if file_resp.status_code != 200:
+                raise Exception(f"Could not fetch file {file_path} from {owner_repo}: {file_resp.status_code} - {file_resp.text}")
+            
+            file_data = file_resp.json()
+            original_content = base64.b64decode(file_data['content']).decode('utf-8')
+            file_sha = file_data['sha']
+            
+            # 2. Generate fix with AI
+            finding_context = f"File: {file_path}\nLine: {req.finding.get('line')}\nType: {req.finding.get('type')}\nMatch: {req.finding.get('match')}"
+            
+            payload = {
+                "systemInstruction": {
+                    "parts": [{"text": "You are an automated remediation bot. Given a vulnerable file and the vulnerability details, output the ENTIRE file with the vulnerability fixed. Do NOT include markdown code block formatting (like ```python) and do NOT include any explanations. Output ONLY the raw corrected file contents."}]
+                },
+                "contents": [{"role": "user", "parts": [{"text": f"Fix this vulnerability:\n\n{finding_context}\n\nOriginal File Content:\n{original_content}"}]}]
+            }
+            
+            ai_resp = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
                 json=payload,
                 timeout=30.0
             )
-            resp.raise_for_status()
-            fixed_code = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            ai_resp.raise_for_status()
+            fixed_code = ai_resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
             
-        if user.githubToken == "mock_github_token_for_testing":
-            return {"message": "PR successfully created! (Mock Mode)", "url": "https://github.com/mock/pull/1", "patch": fixed_code}
+            # Strip markdown if AI accidentally included it
+            if fixed_code.startswith("```"):
+                fixed_code = "\n".join(fixed_code.split("\n")[1:])
+            if fixed_code.endswith("```"):
+                fixed_code = "\n".join(fixed_code.split("\n")[:-1])
+                
+            if user.githubToken == "mock_github_token_for_testing":
+                return {"message": "PR successfully created! (Mock Mode)", "url": "https://github.com/mock/pull/1", "patch": fixed_code}
+                
+            # 3. Get default branch & sha
+            repo_resp = await client.get(api_base, headers=headers)
+            default_branch = repo_resp.json().get("default_branch", "main")
             
-        # Actual GitHub API Logic to create a PR would go here (Fetch file, create branch, commit, PR)
-        # For this prototype, we return the mock success if it was valid
-        return {"message": "PR successfully created!", "url": f"{req.repo_url}/pulls/new", "patch": fixed_code}
+            ref_resp = await client.get(f"{api_base}/git/ref/heads/{default_branch}", headers=headers)
+            base_sha = ref_resp.json().get("object", {}).get("sha")
+            
+            # 4. Create new branch
+            branch_name = f"repoguard-fix-{''.join(random.choices(string.ascii_lowercase + string.digits, k=6))}"
+            new_ref_resp = await client.post(
+                f"{api_base}/git/refs",
+                headers=headers,
+                json={"ref": f"refs/heads/{branch_name}", "sha": base_sha}
+            )
+            if new_ref_resp.status_code != 201:
+                raise Exception("Failed to create branch")
+                
+            # 5. Commit updated file
+            updated_content_b64 = base64.b64encode(fixed_code.encode('utf-8')).decode('utf-8')
+            commit_resp = await client.put(
+                f"{api_base}/contents/{file_path}",
+                headers=headers,
+                json={
+                    "message": f"Auto-fix {req.finding.get('type')} vulnerability in {file_path}",
+                    "content": updated_content_b64,
+                    "sha": file_sha,
+                    "branch": branch_name
+                }
+            )
+            if commit_resp.status_code not in [200, 201]:
+                raise Exception("Failed to commit fixed file")
+                
+            # 6. Open PR
+            pr_resp = await client.post(
+                f"{api_base}/pulls",
+                headers=headers,
+                json={
+                    "title": f"🛡️ RepoGuard Auto-Fix: {req.finding.get('type')}",
+                    "head": branch_name,
+                    "base": default_branch,
+                    "body": f"This Pull Request was generated autonomously by **RepoGuard AI** to remediate a detected vulnerability.\n\n- **Vulnerability:** {req.finding.get('type')}\n- **File:** `{file_path}`\n- **Line:** {req.finding.get('line')}\n\nPlease review the changes before merging."
+                }
+            )
+            if pr_resp.status_code != 201:
+                raise Exception("Failed to open PR")
+                
+            pr_url = pr_resp.json().get("html_url")
+            
+            return {"message": "PR successfully created!", "url": pr_url, "patch": fixed_code}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
