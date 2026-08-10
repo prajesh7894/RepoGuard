@@ -30,6 +30,14 @@
 | **Day 18** | `01/08/2026` | Advanced Secret Detection Heuristics | ✅ |
 | **Day 19** | `08/08/2026` | Autonomous GitHub PR Remediation | ✅ |
 | **Day 20** | `09/08/2026` | Real GitHub API PR Orchestration | ✅ |
+| **Day 21** | `10/08/2026` | Software Composition Analysis (SCA) | ✅ |
+
+---
+
+## 📅 Day 21: Software Composition Analysis (SCA) Engine
+**Date:** `10/08/2026`
+- **Tasks:** Engineered a brand new Software Composition Analysis (SCA) plugin that dynamically parses `package.json` files and batches dependency versions against the official Google Open Source Vulnerabilities (OSV) API (`api.osv.dev`). Integrated the new module into the core scanning engine to automatically map identified CVEs (like Prototype Pollution and ReDoS) directly into RepoGuard's vulnerability dashboard.
+- **Outcome:** RepoGuard evolved from a pure SAST scanner to a comprehensive SAST+SCA platform, capable of securing both authored code and imported dependencies.
 
 ---
 
