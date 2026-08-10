@@ -5,6 +5,7 @@ from git import Repo
 import time
 
 from .plugins.regex import regex_scan
+from .plugins.sca import sca_scan
 from .plugins.bandit import bandit_scan
 from .plugins.secrets import secrets_scan
 from .aggregator import aggregate_findings
@@ -21,6 +22,7 @@ def run_scan_sync(url: str):
         # Run plugins
         findings = []
         findings.extend(regex_scan(temp_dir))
+        findings.extend(sca_scan(temp_dir))
         findings.extend(bandit_scan(temp_dir))
         findings.extend(secrets_scan(temp_dir))
 
