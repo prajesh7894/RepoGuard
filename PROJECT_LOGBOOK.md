@@ -31,6 +31,14 @@
 | **Day 19** | `08/08/2026` | Autonomous GitHub PR Remediation | ✅ |
 | **Day 20** | `09/08/2026` | Real GitHub API PR Orchestration | ✅ |
 | **Day 21** | `10/08/2026` | Software Composition Analysis (SCA) | ✅ |
+| **Day 22** | `11/08/2026` | Real-Time GitHub Webhooks & CI/CD | ✅ |
+
+---
+
+## 📅 Day 22: Real-Time GitHub Webhooks & CI/CD Status Checks
+**Date:** `11/08/2026`
+- **Tasks:** Transformed RepoGuard into an automated CI/CD pipeline. Added backend capabilities to dynamically register GitHub Webhooks (`push` and `pull_request` events) via the GitHub REST API. Built a secure webhook listener that intercepts incoming commits, automatically triggers background scans, and uses the GitHub Commit Status API to push live pass/fail checks (✅ or ❌) directly onto the user's GitHub PRs.
+- **Outcome:** Complete invisible automation. Developers no longer need to click "Scan"—code is secured autonomously the moment it is pushed.
 
 ---
 
