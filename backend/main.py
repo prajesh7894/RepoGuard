@@ -196,6 +196,49 @@ async def github_callback(payload: dict, db: Session = Depends(get_db), user: mo
 
     return {"message": "GitHub linked successfully and repositories synced"}
 
+class WebhookRequest(BaseModel):
+    webhook_url: str
+
+@app.post("/api/repos/{repo_id}/webhook")
+async def register_webhook(repo_id: int, req: WebhookRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    if not user.githubToken:
+        raise HTTPException(status_code=401, detail="GitHub not linked")
+        
+    repo = db.query(models.Repository).filter(models.Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repo not found")
+        
+    owner_repo = repo.url.replace("https://github.com/", "").replace(".git", "")
+    api_url = f"https://api.github.com/repos/{owner_repo}/hooks"
+    
+    headers = {
+        "Authorization": f"token {user.githubToken}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    payload = {
+        "name": "web",
+        "active": True,
+        "events": ["push", "pull_request"],
+        "config": {
+            "url": req.webhook_url,
+            "content_type": "json",
+            "secret": os.getenv("GITHUB_WEBHOOK_SECRET", "supersecret"),
+            "insecure_ssl": "0"
+        }
+    }
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(api_url, headers=headers, json=payload)
+        
+    if resp.status_code not in (200, 201):
+        # 422 usually means webhook already exists
+        if resp.status_code != 422:
+            raise HTTPException(status_code=resp.status_code, detail=f"Failed to create webhook: {resp.text}")
+            
+    return {"message": "Webhook registered successfully"}
+
+
 import base64
 import random
 import string

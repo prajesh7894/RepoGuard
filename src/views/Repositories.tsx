@@ -219,7 +219,37 @@ export default function Repositories() {
                 </span>
               )}
               <div className="flex gap-2">
-                <button className="px-3 py-1.5 rounded-md font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-variant transition-colors cursor-pointer">Report</button>
+                <button 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      // We use a hardcoded ngrok URL for now or prompt the user
+                      const webhookUrl = prompt("Enter your public webhook URL (e.g. https://<ngrok>.ngrok-free.app/api/webhooks/github):");
+                      if (!webhookUrl) return;
+                      
+                      const res = await fetch(`/api/repos/${repo.id}/webhook`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ webhook_url: webhookUrl })
+                      });
+                      if (res.ok) {
+                        alert("CI/CD Webhook enabled successfully!");
+                      } else {
+                        const err = await res.json();
+                        alert("Failed to enable webhook: " + err.detail);
+                      }
+                    } catch (err) {
+                      console.error(err);
+                      alert("Error enabling CI/CD");
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-md bg-surface-container-highest border border-outline-variant/30 font-body-sm text-body-sm text-on-surface hover:border-primary/50 transition-colors cursor-pointer"
+                >
+                  Enable CI/CD
+                </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); triggerScan(repo.id); }}
                   disabled={repo.isScanning}
