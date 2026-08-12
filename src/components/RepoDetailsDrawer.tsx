@@ -204,12 +204,34 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                       {/* AI Review Section */}
                       <div className="mt-2">
                         {!aiReviews[idx] && !aiLoading[idx] && (
-                          <button 
-                            onClick={() => handleAiReview(idx, finding)}
-                            className="flex items-center gap-2 text-sm bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors font-medium border border-primary/20"
-                          >
-                            <Sparkles size={16} /> Analyze with Gemini AI
-                          </button>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleAiReview(idx, finding)}
+                              className="flex items-center gap-2 text-sm bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors font-medium border border-primary/20"
+                            >
+                              <Sparkles size={16} /> Analyze with Gemini AI
+                            </button>
+                            {!prSuccess[idx] && (
+                              <button
+                                onClick={() => handleCreatePR(idx, finding)}
+                                disabled={prLoading[idx]}
+                                className="flex items-center gap-2 text-sm bg-[#2ea043] hover:bg-[#2c974b] text-white px-4 py-2 rounded-lg transition-colors font-medium border border-transparent disabled:opacity-50"
+                              >
+                                {prLoading[idx] ? (
+                                  <><Loader2 size={16} className="animate-spin" /> Generating Fix...</>
+                                ) : (
+                                  <><div className="i-lucide-github" style={{width: 16, height: 16}}></div> 1-Click Auto-Fix PR</>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {prSuccess[idx] && (
+                          <div className="flex items-center gap-2 text-success text-sm font-medium p-3 bg-success/10 border border-success/20 rounded-lg mt-2">
+                            <CheckCircle2 size={16} />
+                            <span>PR Created: <a href={prSuccess[idx]} target="_blank" rel="noreferrer" className="underline hover:text-success/80">View on GitHub</a></span>
+                          </div>
                         )}
 
                         {aiLoading[idx] && (
@@ -248,13 +270,8 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                                 </div>
                               )}
                               
-                              <div className="mt-4 pt-4 border-t border-primary/20 flex items-center justify-between">
-                                {prSuccess[idx] ? (
-                                  <div className="flex items-center gap-2 text-success text-sm font-medium">
-                                    <CheckCircle2 size={16} />
-                                    <span>PR Created: <a href={prSuccess[idx]} target="_blank" rel="noreferrer" className="underline hover:text-success/80">View on GitHub</a></span>
-                                  </div>
-                                ) : (
+                              <div className="mt-4 pt-4 border-t border-primary/20 flex items-center justify-end">
+                                {!prSuccess[idx] && (
                                   <button
                                     onClick={() => handleCreatePR(idx, finding)}
                                     disabled={prLoading[idx]}
