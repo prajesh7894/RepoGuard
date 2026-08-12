@@ -7,9 +7,40 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [aiReviews, setAiReviews] = useState<Record<number, any>>({});
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
+  const [prLoading, setPrLoading] = useState<Record<number, boolean>>({});
+  const [prSuccess, setPrSuccess] = useState<Record<number, string>>({});
   const { token } = useAuth();
 
   if (!repo) return null;
+
+  const handleCreatePR = async (idx: number, finding: any) => {
+    setPrLoading(prev => ({ ...prev, [idx]: true }));
+    try {
+      const response = await fetch('/api/remediate/pr', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          finding: finding,
+          repo_url: repo.url
+        })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPrSuccess(prev => ({ ...prev, [idx]: data.url }));
+      } else {
+        alert(data.detail || "Failed to create PR.");
+      }
+    } catch (error) {
+      console.error("PR Creation failed:", error);
+      alert("Failed to create PR due to network error.");
+    } finally {
+      setPrLoading(prev => ({ ...prev, [idx]: false }));
+    }
+  };
 
   const handleAiReview = async (idx: number, finding: any) => {
     const codeSnippet = finding.snippet || finding.match;
@@ -216,6 +247,27 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                                   </div>
                                 </div>
                               )}
+                              
+                              <div className="mt-4 pt-4 border-t border-primary/20 flex items-center justify-between">
+                                {prSuccess[idx] ? (
+                                  <div className="flex items-center gap-2 text-success text-sm font-medium">
+                                    <CheckCircle2 size={16} />
+                                    <span>PR Created: <a href={prSuccess[idx]} target="_blank" rel="noreferrer" className="underline hover:text-success/80">View on GitHub</a></span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleCreatePR(idx, finding)}
+                                    disabled={prLoading[idx]}
+                                    className="flex items-center gap-2 text-sm bg-[#2ea043] hover:bg-[#2c974b] text-white px-4 py-2 rounded-lg transition-colors font-medium border border-transparent disabled:opacity-50"
+                                  >
+                                    {prLoading[idx] ? (
+                                      <><Loader2 size={16} className="animate-spin" /> Generating Fix...</>
+                                    ) : (
+                                      <><div className="i-lucide-github" style={{width: 16, height: 16}}></div> 1-Click Auto-Fix PR</>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
