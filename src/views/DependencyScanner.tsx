@@ -6,6 +6,20 @@ export default function DependencyScanner() {
   const { token } = useAuth();
   const [dependencies, setDependencies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fixing, setFixing] = useState<Record<string, boolean>>({});
+
+  const handleFixPR = (depId: string) => {
+    setFixing(prev => ({ ...prev, [depId]: true }));
+    setTimeout(() => {
+      setDependencies(prev => prev.map(d => 
+        d.id === depId ? { ...d, status: 'patched' } : d
+      ));
+      setFixing(prev => ({ ...prev, [depId]: false }));
+      alert("Mock PR created successfully to update this dependency!");
+    }, 1500);
+  };
+
+  const [autoPREnabled, setAutoPREnabled] = useState(false);
 
   useEffect(() => {
     const fetchScans = async () => {
@@ -70,8 +84,14 @@ export default function DependencyScanner() {
             <div>
                <h3 className="text-on-surface font-semibold mb-1">Automated Fixes</h3>
                <p className="text-sm text-on-surface-variant mb-4">RepoGuard can automatically generate Pull Requests.</p>
-               <button className="bg-primary-container text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-container/90 transition-colors cursor-pointer flex items-center gap-2">
-                  Enable Auto-PRs
+               <button 
+                 onClick={() => {
+                   setAutoPREnabled(!autoPREnabled);
+                   alert(autoPREnabled ? "Automated PRs disabled." : "Automated PRs enabled! RepoGuard will now monitor and patch vulnerabilities automatically.");
+                 }}
+                 className={`${autoPREnabled ? 'bg-success text-on-success hover:bg-success/90' : 'bg-primary-container text-white hover:bg-primary-container/90'} px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2`}
+               >
+                  {autoPREnabled ? "Auto-PRs Enabled" : "Enable Auto-PRs"}
                </button>
             </div>
          </div>
@@ -181,8 +201,12 @@ export default function DependencyScanner() {
                   <td className="p-4 text-right">
                      <div className="flex justify-end gap-2">
                         {dep.status === 'vulnerable' && (
-                           <button className="px-3 py-1.5 bg-primary-container hover:bg-primary-container/90 text-white text-xs font-medium rounded transition-colors cursor-pointer flex items-center gap-1 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
-                              Fix PR <ArrowUpRight size={14} />
+                           <button 
+                             onClick={() => handleFixPR(dep.id)}
+                             disabled={fixing[dep.id]}
+                             className="px-3 py-1.5 bg-primary-container hover:bg-primary-container/90 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 shadow-[0_0_10px_rgba(37,99,235,0.2)] disabled:opacity-50"
+                           >
+                              {fixing[dep.id] ? 'Fixing...' : 'Fix PR'} {fixing[dep.id] ? null : <ArrowUpRight size={14} />}
                            </button>
                         )}
                         <button className="p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded hover:bg-surface-variant">
