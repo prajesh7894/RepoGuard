@@ -744,32 +744,32 @@ def execute_background_scan(repo_id: int):
         db.add(new_notif)
         db.commit()
 
-        # Fire Slack Webhook if critical or secrets found
+        # Fire Slack Webhook
         if user_to_notify and getattr(user_to_notify, "slackWebhook", None):
-            if result['critical'] > 0 or result['secrets'] > 0:
-                try:
-                    payload = {
-                        "blocks": [
-                            {
-                                "type": "header",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": f"🚨 Critical Security Alert in {repo.name} 🚨",
-                                    "emoji": True
-                                }
-                            },
-                            {
-                                "type": "section",
-                                "text": {
-                                    "type": "mrkdwn",
-                                    "text": f"*Repository:* {repo.name}\n*Critical Vulnerabilities:* {result['critical']}\n*Exposed Secrets:* {result['secrets']}\n\nRepoGuard autonomous scan completed. Please review the findings immediately on the RepoGuard dashboard to initiate a 1-Click Auto-Fix PR."
-                                }
+            try:
+                alert_text = f"🚨 Critical Security Alert in {repo.name} 🚨" if (result['critical'] > 0 or result['secrets'] > 0) else f"✅ Scan Completed: {repo.name} ✅"
+                payload = {
+                    "blocks": [
+                        {
+                            "type": "header",
+                            "text": {
+                                "type": "plain_text",
+                                "text": alert_text,
+                                "emoji": True
                             }
-                        ]
-                    }
-                    httpx.post(user_to_notify.slackWebhook, json=payload, timeout=5.0)
-                except Exception as e:
-                    print(f"Failed to trigger Slack webhook: {e}")
+                        },
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": f"*Repository:* {repo.name}\n*Critical Vulnerabilities:* {result['critical']}\n*Exposed Secrets:* {result['secrets']}\n\nRepoGuard autonomous scan completed. Please review the findings immediately on the RepoGuard dashboard."
+                            }
+                        }
+                    ]
+                }
+                httpx.post(user_to_notify.slackWebhook, json=payload, timeout=5.0)
+            except Exception as e:
+                print(f"Failed to trigger Slack webhook: {e}")
 
     finally:
         db.close()
@@ -870,13 +870,44 @@ async def scan_stream(
                             message=f"Manual scan for {repo.name} finished with {result['critical']} critical findings."
                         )
                         member = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == repo.orgId).first()
+                        user_to_notify = None
                         if member:
                             new_notif.userId = member.userId
+                            user_to_notify = db.query(models.User).filter(models.User.id == member.userId).first()
                         else:
                             new_notif.userId = 1
-                        db.add(new_notif)
+                            user_to_notify = db.query(models.User).filter(models.User.id == new_notif.userId).first()
                         
+                        db.add(new_notif)
                         db.commit()
+
+                        # Fire Slack Webhook
+                        if user_to_notify and getattr(user_to_notify, "slackWebhook", None):
+                            try:
+                                alert_text = f"🚨 Critical Security Alert in {repo.name} 🚨" if (result['critical'] > 0 or result['secrets'] > 0) else f"✅ Scan Completed: {repo.name} ✅"
+                                payload = {
+                                    "blocks": [
+                                        {
+                                            "type": "header",
+                                            "text": {
+                                                "type": "plain_text",
+                                                "text": alert_text,
+                                                "emoji": True
+                                            }
+                                        },
+                                        {
+                                            "type": "section",
+                                            "text": {
+                                                "type": "mrkdwn",
+                                                "text": f"*Repository:* {repo.name}\n*Critical Vulnerabilities:* {result['critical']}\n*Exposed Secrets:* {result['secrets']}\n\nRepoGuard autonomous scan completed. Please review the findings immediately on the RepoGuard dashboard."
+                                            }
+                                        }
+                                    ]
+                                }
+                                httpx.post(user_to_notify.slackWebhook, json=payload, timeout=5.0)
+                            except Exception as e:
+                                print(f"Failed to trigger Slack webhook: {e}")
+
                 finally:
                     db.close()
 
