@@ -224,6 +224,16 @@
   - Expanded Python static analysis heuristics targeting `debug=True`, `pickle.loads()`, `eval()`, and `subprocess` risks.
 - **Outcome:** RepoGuard now offers an embedded, conversational AI Security Architect capable of holding context-aware dialogues to explain and remediate detected vulnerabilities.
 
+## 📅 Day 25: Real-Time Slack & Discord Integrations
+**Date:** `13/08/2026` *(Today)*
+- **Tasks:**
+  - Upgraded Prisma database schema (`User` model) with `slackWebhook` field.
+  - Created backend REST API endpoints (`GET /api/integrations/slack`, `POST /api/integrations/slack`) to securely store and retrieve webhooks.
+  - Updated the core scanning engine (`core.py`) and manual streaming endpoint to dispatch rich, markdown-formatted `Block Kit` payloads to the webhook via `httpx`.
+  - Overhauled `Integrations.tsx` to include an interactive connection modal, live status indicators, and dynamic connection/disconnection logic.
+  - Successfully tested and resolved streaming lifecycle bugs to ensure alerts fire for both automated and manual scans.
+- **Outcome:** Seamless integration with team communication platforms for instant security visibility.
+
 ---
 
 ### 🎯 Next Planned Milestones
