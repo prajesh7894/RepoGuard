@@ -22,6 +22,12 @@ class ChatRequest(BaseModel):
 class AIReviewRequest(BaseModel):
     code: str
 
+class WebhookCreate(BaseModel):
+    webhook_url: str
+
+class SlackWebhookUpdate(BaseModel):
+    slackWebhook: Optional[str] = None
+
 class RepoCreate(BaseModel):
     url: str
 

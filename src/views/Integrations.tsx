@@ -1,11 +1,81 @@
-import { Puzzle, CheckCircle2, Webhook, Plus, ExternalLink, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Puzzle, CheckCircle2, Webhook, Plus, ExternalLink, ArrowRight, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Integrations() {
+  const { token } = useAuth();
+  const [slackWebhook, setSlackWebhook] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newWebhook, setNewWebhook] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (token) {
+      fetch('/api/integrations/slack', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.slackWebhook) {
+          setSlackWebhook(data.slackWebhook);
+        }
+      })
+      .catch(err => console.error("Failed to fetch integrations", err));
+    }
+  }, [token]);
+
+  const handleSaveWebhook = async () => {
+    if (!newWebhook.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/integrations/slack', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ slackWebhook: newWebhook })
+      });
+      if (res.ok) {
+        setSlackWebhook(newWebhook);
+        setIsModalOpen(false);
+      } else {
+        alert("Failed to save webhook");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving webhook");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/integrations/slack', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ slackWebhook: null })
+      });
+      if (res.ok) {
+        setSlackWebhook(null);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const integrations = [
     { id: 'github', name: 'GitHub', category: 'Version Control', status: 'connected', desc: 'Scan code, PRs, and commits automatically.' },
     { id: 'gitlab', name: 'GitLab', category: 'Version Control', status: 'available', desc: 'Integrate with GitLab repositories and pipelines.' },
-    { id: 'slack', name: 'Slack', category: 'Notifications', status: 'connected', desc: 'Receive real-time alerts in Slack channels.' },
-    { id: 'jira', name: 'Jira Software', category: 'Issue Tracking', status: 'connected', desc: 'Automatically sync vulnerabilities as Jira tickets.' },
+    { id: 'slack', name: 'Slack', category: 'Notifications', status: slackWebhook ? 'connected' : 'available', desc: 'Receive real-time alerts in Slack channels.' },
+    { id: 'jira', name: 'Jira Software', category: 'Issue Tracking', status: 'available', desc: 'Automatically sync vulnerabilities as Jira tickets.' },
     { id: 'datadog', name: 'DataDog', category: 'Monitoring', status: 'available', desc: 'Export security metrics to DataDog dashboards.' },
     { id: 'snyk', name: 'Snyk Import', category: 'Data Sync', status: 'available', desc: 'Import historical findings from Snyk.' },
   ];
@@ -49,11 +119,19 @@ export default function Integrations() {
             </p>
             <div className="mt-auto">
               {integration.status === 'connected' ? (
-                <button className="w-full py-2 bg-surface-variant/50 text-on-surface text-sm font-medium rounded hover:bg-surface-variant transition-colors border border-outline-variant/30 flex items-center justify-center gap-2 cursor-pointer">
-                  Manage <ExternalLink size={14} />
+                <button 
+                  onClick={() => integration.id === 'slack' ? handleDisconnect() : null}
+                  className="w-full py-2 bg-surface-variant/50 text-on-surface text-sm font-medium rounded hover:bg-surface-variant transition-colors border border-outline-variant/30 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {integration.id === 'slack' ? (saving ? 'Disconnecting...' : 'Disconnect') : <><ExternalLink size={14} /> Manage</>}
                 </button>
               ) : (
-                <button className="w-full py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(37,99,235,0.1)]">
+                <button 
+                  onClick={() => {
+                    if (integration.id === 'slack') setIsModalOpen(true);
+                  }}
+                  className="w-full py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(37,99,235,0.1)]"
+                >
                   <Plus size={16} /> Connect
                 </button>
               )}
@@ -71,6 +149,57 @@ export default function Integrations() {
             View API Documentation <ArrowRight size={16} />
          </button>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-surface-container-highest border border-outline-variant/30 rounded-xl w-full max-w-md overflow-hidden shadow-2xl relative">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-on-surface font-bold">
+                  S
+                </div>
+                <h3 className="text-xl font-bold text-on-surface">Connect Slack</h3>
+              </div>
+              <p className="text-sm text-on-surface-variant mb-6">
+                Enter your Slack Webhook URL. RepoGuard will instantly notify this channel whenever a critical vulnerability or secret is detected.
+              </p>
+              
+              <div className="mb-6">
+                <label className="block text-xs font-medium text-on-surface-variant mb-2">Slack Webhook URL</label>
+                <input 
+                  type="text"
+                  value={newWebhook}
+                  onChange={(e) => setNewWebhook(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-on-surface hover:bg-surface-variant rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveWebhook}
+                  disabled={saving || !newWebhook.trim()}
+                  className="px-4 py-2 text-sm font-medium bg-primary-container text-white rounded-lg hover:bg-primary-container/90 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Connect Slack'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

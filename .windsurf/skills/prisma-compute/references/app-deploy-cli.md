@@ -40,7 +40,7 @@ bunx @prisma/cli@latest agent status --json
 
 ## Auth and Project Binding
 
-Useful commands:
+ Useful commands:
 
 ```bash
 bunx @prisma/cli@latest auth login
@@ -147,9 +147,9 @@ Manage project env vars:
 bunx @prisma/cli@latest project env list
 bunx @prisma/cli@latest project env add --file .env --role production
 bunx @prisma/cli@latest project env add --file .env.preview --role preview
-bunx @prisma/cli@latest project env add DATABASE_URL=postgresql://... --branch feature/foo
+bunx @prisma/cli@latest project env add DATABASE_URL=<DATABASE_URL> --branch feature/foo
 bunx @prisma/cli@latest project env update --file .env --role production
-bunx @prisma/cli@latest project env update DATABASE_URL=postgresql://... --branch feature/foo
+bunx @prisma/cli@latest project env update DATABASE_URL=<DATABASE_URL> --branch feature/foo
 bunx @prisma/cli@latest project env list --branch feature/foo
 bunx @prisma/cli@latest project env remove STRIPE_KEY --role preview
 ```

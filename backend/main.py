@@ -112,6 +112,16 @@ def update_preferences(prefs: schemas.PreferencesUpdate, db: Session = Depends(g
     db.commit()
     return {"message": "Preferences updated successfully"}
 
+@app.get("/api/integrations/slack")
+def get_slack_integration(user: models.User = Depends(get_current_user)):
+    return {"slackWebhook": user.slackWebhook}
+
+@app.post("/api/integrations/slack")
+def update_slack_integration(data: schemas.SlackWebhookUpdate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    user.slackWebhook = data.slackWebhook
+    db.commit()
+    return {"message": "Slack integration updated successfully"}
+
 from fastapi.responses import RedirectResponse
 import httpx
 from urllib.parse import urlencode
@@ -724,10 +734,43 @@ def execute_background_scan(repo_id: int):
         )
         # Try to find a user in that org
         member = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == repo.orgId).first()
+        user_to_notify = None
         if member:
             new_notif.userId = member.userId
+            user_to_notify = db.query(models.User).filter(models.User.id == member.userId).first()
+        else:
+            user_to_notify = db.query(models.User).filter(models.User.id == new_notif.userId).first()
+
         db.add(new_notif)
         db.commit()
+
+        # Fire Slack Webhook if critical or secrets found
+        if user_to_notify and getattr(user_to_notify, "slackWebhook", None):
+            if result['critical'] > 0 or result['secrets'] > 0:
+                try:
+                    payload = {
+                        "blocks": [
+                            {
+                                "type": "header",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": f"🚨 Critical Security Alert in {repo.name} 🚨",
+                                    "emoji": True
+                                }
+                            },
+                            {
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": f"*Repository:* {repo.name}\n*Critical Vulnerabilities:* {result['critical']}\n*Exposed Secrets:* {result['secrets']}\n\nRepoGuard autonomous scan completed. Please review the findings immediately on the RepoGuard dashboard to initiate a 1-Click Auto-Fix PR."
+                                }
+                            }
+                        ]
+                    }
+                    httpx.post(user_to_notify.slackWebhook, json=payload, timeout=5.0)
+                except Exception as e:
+                    print(f"Failed to trigger Slack webhook: {e}")
+
     finally:
         db.close()
 
