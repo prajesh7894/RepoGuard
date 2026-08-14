@@ -935,21 +935,61 @@ def mark_notifications_read(db: Session = Depends(get_db), user: models.User = D
 
 # -- Reports --
 @app.get("/api/reports/analytics")
-def get_report_analytics(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
-    # simple mock logic based on actual scans for the UI
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    scans = db.query(models.Scan).filter(models.Scan.createdAt >= thirty_days_ago).all()
+def get_report_analytics(days: int = 7, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
     
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Get all scans within the timeframe
+    scans = db.query(models.Scan).filter(models.Scan.createdAt >= start_date).all()
+    
+    # 1. Calculate time-series trend (group by day)
+    trend_map = {}
+    # Initialize the map with all days in the range to ensure no gaps
+    for i in range(days):
+        d = (datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d')
+        # Use weekday name as the chart label
+        day_name = (datetime.utcnow() - timedelta(days=i)).strftime('%a') 
+        trend_map[d] = {"name": day_name, "critical": 0, "highAndSecrets": 0, "fullDate": d}
+
+    for s in scans:
+        d = s.createdAt.strftime('%Y-%m-%d')
+        if d in trend_map:
+            trend_map[d]["critical"] += s.critical
+            trend_map[d]["highAndSecrets"] += (s.high + s.secrets)
+
+    # Sort trend by date ascending
+    trend = [v for k, v in sorted(trend_map.items())]
+
+    # 2. Calculate top risky repositories
+    repo_risk = {}
+    for s in scans:
+        if s.repoId not in repo_risk:
+            repo = db.query(models.Repository).filter(models.Repository.id == s.repoId).first()
+            repo_name = repo.name if repo else f"Repo #{s.repoId}"
+            repo_risk[s.repoId] = {"name": repo_name, "critical": 0, "high": 0, "secrets": 0, "total": 0}
+        
+        repo_risk[s.repoId]["critical"] += s.critical
+        repo_risk[s.repoId]["high"] += s.high
+        repo_risk[s.repoId]["secrets"] += s.secrets
+        repo_risk[s.repoId]["total"] += (s.critical + s.high + s.secrets)
+
+    # Sort by total descending and take top 5
+    top_risky_repos = sorted(list(repo_risk.values()), key=lambda x: x["total"], reverse=True)[:5]
+    
+    # 3. Overall severity totals
     crit = sum(s.critical for s in scans)
     high = sum(s.high for s in scans)
-    med = sum(s.secrets for s in scans) # repurposing secrets as medium for simple demo distribution
+    secrets = sum(s.secrets for s in scans)
     
     return {
-        "trend": [max(5, s.critical + s.high) for s in scans[-10:]] if scans else [10, 20, 15, 25, 20],
+        "trend": trend,
+        "top_risky_repos": top_risky_repos,
         "severity": {
-            "critical": crit or 12,
-            "high": high or 25,
-            "medium": med or 43
+            "critical": crit,
+            "high": high,
+            "secrets": secrets
         }
     }
 

@@ -17,20 +17,20 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
           <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
               <input 
-                  className="bg-surface-container-highest border border-outline-variant/30 rounded-full pl-10 pr-4 py-1 text-body-sm font-body-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-on-surface placeholder:text-on-surface-variant/50 w-64 input-glow" 
+                  className="bg-surface-container-highest border border-outline-variant/30 rounded-full pl-10 pr-4 py-1 text-body-sm font-body-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-on-surface placeholder:text-on-surface-variant/50 w-40 lg:w-48 xl:w-64 input-glow" 
                   placeholder="Search repositories, scans..." 
                   type="text" 
               />
           </div>
         </div>
         <div className="flex items-center gap-6">
-          <nav className="hidden lg:flex gap-6">
+          <nav className="hidden xl:flex gap-6">
               <button onClick={() => setView('product')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Product</button>
               <button onClick={() => setView('solutions')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Solutions</button>
               <button onClick={() => setView('pricing')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Pricing</button>
               <button onClick={() => setView('docs')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Docs</button>
           </nav>
-          <div className="h-6 w-px bg-outline-variant/30 hidden lg:block"></div>
+          <div className="h-6 w-px bg-outline-variant/30 hidden xl:block"></div>
           <div className="flex items-center gap-2">
               <button onClick={onOpenAiAssistant} className="bg-primary-container/20 text-primary hover:bg-primary-container/30 px-3 py-1.5 rounded-full font-medium transition-colors border border-primary/20 flex items-center gap-2 text-sm cursor-pointer">
                   <Sparkles size={16} />

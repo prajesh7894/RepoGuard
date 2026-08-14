@@ -1,50 +1,63 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   const [repos, setRepos] = useState<any[]>([]);
   const [scans, setScans] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [days, setDays] = useState(7);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { user, token } = useAuth();
   const userName = user?.name ? user.name.split(' ')[0] : (user?.email?.split('@')[0] || 'User');
 
+  const fetchData = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) {
+      setIsRefreshing(true);
+    }
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [reposRes, scansRes, analyticsRes] = await Promise.all([
+        fetch('/api/repos', { headers }),
+        fetch('/api/scans', { headers }),
+        fetch(`/api/reports/analytics?days=${days}`, { headers })
+      ]);
+      
+      if (!reposRes.ok || !scansRes.ok || !analyticsRes.ok) throw new Error("Failed to fetch data");
+      
+      const reposData = await reposRes.json();
+      const scansData = await scansRes.json();
+      const analyticsData = await analyticsRes.json();
+      
+      setRepos(Array.isArray(reposData) ? reposData : []);
+      setScans(Array.isArray(scansData) ? scansData : []);
+      setAnalytics(analyticsData);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      setRepos([]);
+      setScans([]);
+      setAnalytics(null);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [token, days]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const headers = { 'Authorization': `Bearer ${token}` };
-        const [reposRes, scansRes] = await Promise.all([
-          fetch('/api/repos', { headers }),
-          fetch('/api/scans', { headers })
-        ]);
-        
-        if (!reposRes.ok || !scansRes.ok) throw new Error("Failed to fetch data");
-        
-        const reposData = await reposRes.json();
-        const scansData = await scansRes.json();
-        
-        // Ensure they are arrays
-        setRepos(Array.isArray(reposData) ? reposData : []);
-        setScans(Array.isArray(scansData) ? scansData : []);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-        setRepos([]);
-        setScans([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     if (token) {
       fetchData();
     }
-  }, [token]);
+  }, [token, fetchData]);
 
-  const totalCritical = repos.reduce((sum, repo) => sum + (repo.findings?.crit || 0), 0);
-  const totalHigh = repos.reduce((sum, repo) => sum + (repo.findings?.high || 0), 0);
-  const totalSecrets = repos.reduce((sum, repo) => sum + (repo.findings?.secrets || 0), 0);
+  const totalCritical = analytics?.severity?.critical || 0;
+  const totalHigh = analytics?.severity?.high || 0;
+  const totalSecrets = analytics?.severity?.secrets || 0;
   
   const avgScore = repos.length > 0 
     ? Math.round(repos.reduce((sum, repo) => sum + (repo.score || 0), 0) / repos.length) 
@@ -62,80 +75,106 @@ export default function Dashboard() {
     { name: 'Secrets', value: totalSecrets, color: '#f97316' }, // orange-500
   ].filter(d => d.value > 0);
 
-  const dynamicVulnerabilityData = useMemo(() => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Initialize last 7 days
-    const dataMap = new Map();
-    const today = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dayName = days[d.getDay()];
-      // Use a combination of dayName and offset to ensure uniqueness if we span weeks, but simple name is fine for 7 days
-      dataMap.set(dayName, { name: dayName, critical: 0, highAndSecrets: 0, _date: d.toDateString() });
-    }
+  const dynamicVulnerabilityData = analytics?.trend || [];
+  const topRiskyRepos = analytics?.top_risky_repos || [];
 
-    scans.forEach(scan => {
-      const scanDate = new Date(scan.createdAt);
-      const dayName = days[scanDate.getDay()];
-      if (dataMap.has(dayName)) {
-        const entry = dataMap.get(dayName);
-        // Only count if it's within the last 7 days
-        const diffTime = Math.abs(today.getTime() - scanDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        if (diffDays <= 7) {
-          entry.critical += scan.critical || 0;
-          entry.highAndSecrets += (scan.high || 0) + (scan.secrets || 0);
-        }
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
       }
-    });
+    }
+  };
 
-    return Array.from(dataMap.values());
-  }, [scans]);
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 300, damping: 24 }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
+        <div className="mb-8 mt-2 animate-pulse">
+          <div className="h-8 bg-surface-variant rounded w-64 mb-2"></div>
+          <div className="h-4 bg-surface-variant rounded w-48"></div>
+        </div>
+        <div className="dashboard-grid mb-8">
+          <div className="col-span-12 md:col-span-4 glass-card p-6 h-[220px] animate-pulse bg-surface-variant/50"></div>
+          <div className="col-span-12 md:col-span-2 glass-card p-6 h-[220px] animate-pulse bg-surface-variant/50"></div>
+          <div className="col-span-12 md:col-span-3 glass-card p-6 h-[220px] animate-pulse bg-surface-variant/50"></div>
+          <div className="col-span-12 md:col-span-3 glass-card p-6 h-[220px] animate-pulse bg-surface-variant/50"></div>
+        </div>
+        <div className="dashboard-grid mb-8">
+          <div className="col-span-12 md:col-span-8 glass-card p-6 min-h-[300px] animate-pulse bg-surface-variant/50"></div>
+          <div className="col-span-12 md:col-span-4 glass-card p-6 min-h-[300px] animate-pulse bg-surface-variant/50"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
-      <div className="mb-8 mt-2">
-        <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
-        <p className="text-on-surface-variant font-body-lg">Your security posture is looking strong.</p>
+      <div className="flex justify-between items-end mb-8 mt-2">
+        <div>
+          <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
+          <p className="text-on-surface-variant font-body-lg">Your security posture is looking strong.</p>
+        </div>
+        <button 
+          onClick={() => fetchData(true)}
+          className="flex items-center gap-2 bg-surface-variant hover:bg-surface-variant-hover text-on-surface text-sm font-medium py-2 px-4 rounded-md transition-colors"
+        >
+          <RefreshCw size={16} className={isRefreshing ? "animate-spin text-primary" : ""} />
+          Refresh
+        </button>
       </div>
       
-      <div className="dashboard-grid mb-8">
-        <div className="col-span-12 md:col-span-4 glass-card p-6 flex flex-col justify-between relative overflow-hidden bg-success-subtle/5 cursor-default">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-success/10 rounded-full blur-3xl"></div>
+      <motion.div 
+        className="dashboard-grid mb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className={`col-span-12 md:col-span-6 lg:col-span-3 glass-card p-6 flex flex-col justify-between relative overflow-hidden ${avgScore >= 80 ? 'bg-success-subtle/5' : (avgScore > 50 ? 'bg-warning-subtle/5' : 'bg-critical-subtle/5')} cursor-default`}>
+          <div className={`absolute -right-10 -top-10 w-40 h-40 ${avgScore >= 80 ? 'bg-success/10' : (avgScore > 50 ? 'bg-warning/10' : 'bg-critical/10')} rounded-full blur-3xl`}></div>
           <div>
             <h3 className="text-on-surface-variant font-medium text-sm flex items-center gap-2 mb-4">
-              <Shield className="text-success" size={18} />
+              <Shield className={avgScore >= 80 ? "text-success" : (avgScore > 50 ? "text-warning" : "text-critical")} size={18} />
               Security Score
             </h3>
-          <Tooltip content={<div className="text-left"><p className="font-bold mb-1">Score Breakdown</p><p>Code Security: 92</p><p>Dependencies: 75</p><p>Configuration: 98</p></div>}>
+          <Tooltip content={`Average security score across ${repos.length} repositories`}>
             <div className="flex items-end gap-3 cursor-help">
-              <span className="font-display-lg text-[48px] font-bold text-on-surface leading-none">88</span>
+              <span className="font-display-lg text-4xl lg:text-[48px] font-bold text-on-surface leading-none">{avgScore}</span>
               <span className="text-on-surface-variant text-sm mb-1">/100</span>
             </div>
           </Tooltip>
           </div>
           <div className="mt-6">
-            <Tooltip content="Trend: Improving. Score increased by 2 points since last week.">
+            <Tooltip content="Organization-wide average security posture">
               <div className="w-full h-2 bg-surface-variant rounded-full overflow-hidden cursor-help">
-                <div className="h-full bg-success rounded-full w-[88%] shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
+                <div className={`h-full rounded-full w-[${avgScore}%] ${avgScore >= 80 ? 'bg-success shadow-[0_0_10px_rgba(74,222,128,0.5)]' : (avgScore > 50 ? 'bg-warning shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'bg-critical shadow-[0_0_10px_rgba(248,113,113,0.5)]')}`} style={{ width: `${avgScore}%` }}></div>
               </div>
             </Tooltip>
-            <p className="text-success text-xs mt-2 font-medium flex items-center gap-1">
+            <p className={`${avgScore >= 80 ? 'text-success' : (avgScore > 50 ? 'text-warning' : 'text-critical')} text-xs mt-2 font-medium flex items-center gap-1`}>
               <TrendingUp size={14} />
-              +2 from last week
+              {avgScore >= 80 ? 'Looking healthy' : 'Action required'}
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-12 md:col-span-2 glass-card p-6 flex flex-col justify-between cursor-default">
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-6 lg:col-span-3 glass-card p-6 flex flex-col justify-between cursor-default">
           <h3 className="text-on-surface-variant font-medium text-sm flex items-center gap-2 mb-4">
             <Radar className="text-primary" size={18} />
             Active Scans
           </h3>
           <Tooltip content="Active Scans">
             <div className="cursor-help">
-              <span className="font-display-lg text-[40px] font-bold text-on-surface leading-none">{scanningCount}</span>
+              <span className="font-display-lg text-4xl lg:text-[40px] font-bold text-on-surface leading-none">{scanningCount}</span>
               <div className="flex items-center gap-2 mt-4">
                 {scanningCount > 0 ? (
                   <>
@@ -151,16 +190,16 @@ export default function Dashboard() {
               </div>
             </div>
           </Tooltip>
-        </div>
+        </motion.div>
 
-        <div className="col-span-12 md:col-span-3 glass-card p-6 flex flex-col justify-between border-l-4 border-l-error shadow-critical-glow cursor-default">
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-6 lg:col-span-3 glass-card p-6 flex flex-col justify-between border-l-4 border-l-error shadow-critical-glow cursor-default">
           <h3 className="text-on-surface-variant font-medium text-sm flex items-center gap-2 mb-4">
             <AlertTriangle className="text-critical" size={18} />
             Critical Findings
           </h3>
           <div>
             <div className="flex items-end gap-3">
-              <span className="font-display-lg text-[40px] font-bold text-critical leading-none">{totalCritical}</span>
+              <span className="font-display-lg text-4xl lg:text-[40px] font-bold text-critical leading-none">{totalCritical}</span>
             </div>
             <div className="mt-4 flex gap-2 flex-wrap">
               {repos.filter(r => r.findings?.crit > 0).slice(0, 3).map(repo => (
@@ -173,16 +212,16 @@ export default function Dashboard() {
               {totalCritical === 0 && <span className="text-xs text-on-surface-variant">No critical findings</span>}
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-12 md:col-span-3 glass-card p-6 flex flex-col justify-between cursor-default">
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-6 lg:col-span-3 glass-card p-6 flex flex-col justify-between cursor-default">
           <h3 className="text-on-surface-variant font-medium text-sm flex items-center gap-2 mb-4">
             <Puzzle className="text-warning" size={18} />
             Dependency Risks
           </h3>
           <div>
             <div className="flex items-end gap-3">
-              <span className="font-display-lg text-[40px] font-bold text-warning leading-none">{totalHigh + totalSecrets}</span>
+              <span className="font-display-lg text-4xl lg:text-[40px] font-bold text-warning leading-none">{totalHigh + totalSecrets}</span>
             </div>
             <div className="mt-4">
               <div className="flex justify-between text-xs text-on-surface-variant mb-1">
@@ -199,37 +238,57 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="dashboard-grid mb-8">
-        <div className="col-span-12 md:col-span-8 glass-card p-6 min-h-[300px] flex flex-col">
+      <motion.div 
+        className="dashboard-grid mb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-8 glass-card p-6 min-h-[300px] flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-title-md text-on-surface font-semibold">Vulnerabilities Over Time</h3>
-            <select className="bg-surface-variant border-none text-sm text-on-surface rounded-md py-1 pl-3 pr-8 focus:ring-1 focus:ring-primary outline-none">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
+            <select 
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="bg-surface-variant border-none text-sm text-on-surface rounded-md py-1 pl-3 pr-8 focus:ring-1 focus:ring-primary outline-none"
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={30}>Last 30 Days</option>
             </select>
           </div>
           <div className="flex-1 mt-4 mb-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dynamicVulnerabilityData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+                <defs>
+                  <linearGradient id="colorCrit" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="5%" stopColor="var(--color-critical)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--color-critical)" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="colorWarn" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="5%" stopColor="var(--color-warning)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--color-warning)" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.3} vertical={false} />
                 <XAxis dataKey="name" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
                 <RechartsTooltip 
                   contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', borderColor: 'var(--color-outline-variant)', borderRadius: '8px', color: 'var(--color-on-surface)' }}
                   itemStyle={{ color: 'var(--color-on-surface)' }}
+                  labelStyle={{ fontWeight: 'bold', color: 'var(--color-on-surface)', marginBottom: '4px' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" name="Critical Issues" dataKey="critical" stroke="var(--color-critical)" strokeWidth={2} dot={{ r: 4, fill: 'var(--color-critical)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" name="High & Secrets" dataKey="highAndSecrets" stroke="var(--color-warning)" strokeWidth={2} dot={{ r: 4, fill: 'var(--color-warning)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" name="Critical Issues" dataKey="critical" stroke="url(#colorCrit)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-critical)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" name="High & Secrets" dataKey="highAndSecrets" stroke="url(#colorWarn)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-warning)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-12 md:col-span-4 glass-card p-6 min-h-[300px] flex flex-col">
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-4 glass-card p-6 min-h-[300px] flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-title-md text-on-surface font-semibold">Distribution</h3>
             <button className="text-on-surface-variant hover:text-primary"><MoreVertical size={18} /></button>
@@ -281,11 +340,54 @@ export default function Dashboard() {
               <span className="font-medium">{totalSecrets} ({secretsPct}%)</span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="dashboard-grid pb-12">
-        <div className="col-span-12 md:col-span-6 glass-card p-6 cursor-default">
+      <motion.div 
+        className="dashboard-grid mb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 glass-card p-6 min-h-[300px] flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-title-md text-on-surface font-semibold">Top Risky Repositories</h3>
+            <button className="text-sm text-primary hover:underline">View Full Report</button>
+          </div>
+          <div className="flex-1 mt-4 mb-2">
+            {topRiskyRepos.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topRiskyRepos} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.3} horizontal={true} vertical={false} />
+                  <XAxis type="number" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis dataKey="name" type="category" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} width={150} />
+                  <RechartsTooltip 
+                    cursor={{fill: 'var(--color-surface-variant)', opacity: 0.2}}
+                    contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', borderColor: 'var(--color-outline-variant)', borderRadius: '8px', color: 'var(--color-on-surface)' }}
+                    itemStyle={{ color: 'var(--color-on-surface)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="critical" name="Critical" stackId="a" fill="var(--color-critical)" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="high" name="High" stackId="a" fill="var(--color-warning)" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="secrets" name="Secrets" stackId="a" fill="#f97316" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-on-surface-variant text-sm">
+                No risky repositories found. You're completely secure!
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+
+      <motion.div 
+        className="dashboard-grid pb-12"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-6 glass-card p-6 cursor-default">
           <h3 className="font-title-md text-on-surface mb-6 font-semibold">Recent Activity</h3>
           <div className="relative border-l border-outline-variant/30 ml-3 space-y-6 pb-2">
             {scans.slice(0, 4).map((scan, i) => {
@@ -308,9 +410,9 @@ export default function Dashboard() {
             })}
             {scans.length === 0 && <div className="pl-6 text-on-surface-variant text-sm">No recent activity.</div>}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="col-span-12 md:col-span-6 glass-card p-6 cursor-default">
+        <motion.div variants={itemVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="col-span-12 md:col-span-6 glass-card p-6 cursor-default">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-title-md text-on-surface font-semibold">Repository Health</h3>
             <a className="text-sm text-primary hover:underline" href="#">View All</a>
@@ -336,8 +438,8 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
