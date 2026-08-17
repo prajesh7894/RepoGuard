@@ -429,6 +429,38 @@ def get_repos(db: Session = Depends(get_db), user: models.User = Depends(get_cur
     result = []
     for repo in repos:
         latest_scan = db.query(models.Scan).filter(models.Scan.repoId == repo.id).order_by(models.Scan.createdAt.desc()).first()
+        
+        ignored_records = db.query(models.IgnoredFinding).filter(models.IgnoredFinding.repoId == repo.id).all()
+        ignored_hashes = {rec.findingHash for rec in ignored_records}
+        
+        findings_detail = []
+        active_crit = 0
+        active_high = 0
+        active_secrets = 0
+        
+        if latest_scan and latest_scan.findingsDetail:
+            parsed = json.loads(latest_scan.findingsDetail)
+            for f in parsed:
+                # Use a combined hash: rule_id + match text + file
+                # The frontend can send this back, or we can use the finding's unique properties
+                import hashlib
+                raw = f"{f.get('rule_id', '')}-{f.get('match', '')}-{f.get('file', '')}"
+                f_hash = hashlib.md5(raw.encode()).hexdigest()
+                f['hash'] = f_hash
+                
+                if f_hash in ignored_hashes:
+                    f['isIgnored'] = True
+                else:
+                    f['isIgnored'] = False
+                    severity = str(f.get('severity', '')).lower()
+                    if severity == 'critical':
+                        active_crit += 1
+                    elif severity == 'high':
+                        active_high += 1
+                    if f.get('type') == 'secret':
+                        active_secrets += 1
+                findings_detail.append(f)
+                
         result.append({
             "id": repo.id,
             "name": repo.name,
@@ -440,10 +472,10 @@ def get_repos(db: Session = Depends(get_db), user: models.User = Depends(get_cur
             "isScanning": repo.isScanning,
             "createdAt": repo.createdAt,
             "findings": {
-                "crit": latest_scan.critical if latest_scan else 0,
-                "high": latest_scan.high if latest_scan else 0,
-                "secrets": latest_scan.secrets if latest_scan else 0,
-                "detail": json.loads(latest_scan.findingsDetail) if latest_scan and latest_scan.findingsDetail else []
+                "crit": active_crit,
+                "high": active_high,
+                "secrets": active_secrets,
+                "detail": findings_detail
             }
         })
     return result
@@ -471,6 +503,29 @@ def get_repo(id: int, db: Session = Depends(get_db)):
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
     return repo
+
+@app.post("/api/repos/{id}/findings/ignore")
+def ignore_finding(id: int, req: schemas.IgnoreFindingRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    existing = db.query(models.IgnoredFinding).filter(
+        models.IgnoredFinding.repoId == id,
+        models.IgnoredFinding.findingHash == req.findingHash
+    ).first()
+    if not existing:
+        ignored = models.IgnoredFinding(repoId=id, findingHash=req.findingHash, reason=req.reason)
+        db.add(ignored)
+        db.commit()
+    return {"message": "Finding ignored"}
+
+@app.post("/api/repos/{id}/findings/unignore")
+def unignore_finding(id: int, req: schemas.IgnoreFindingRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    existing = db.query(models.IgnoredFinding).filter(
+        models.IgnoredFinding.repoId == id,
+        models.IgnoredFinding.findingHash == req.findingHash
+    ).first()
+    if existing:
+        db.delete(existing)
+        db.commit()
+    return {"message": "Finding unignored"}
 
 # -- Scans --
 @app.get("/api/scans")

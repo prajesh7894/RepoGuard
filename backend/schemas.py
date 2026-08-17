@@ -73,3 +73,7 @@ class NotificationResponse(BaseModel):
 
 class PreferencesUpdate(BaseModel):
     preferences: str
+
+class IgnoreFindingRequest(BaseModel):
+    findingHash: str
+    reason: str

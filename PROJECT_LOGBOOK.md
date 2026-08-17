@@ -237,9 +237,19 @@
 
 ---
 
-## 📅 Day 24: Dashboard UI Polish & Advanced Analytics Data Binding
-**Date:** `14/08/2026`
-- **Tasks:** Rewrote the `Dashboard.tsx` view to hook into the live backend via the `/api/reports/analytics` endpoint. Removed static mocks and implemented dynamic real-time graphs (Recharts). Polished the frontend with Framer Motion, wrapping widgets in cascading, staggered entry animations. Added a custom Skeleton loading layout to eliminate layout shifting on network loads and fixed responsive zoom layouts.
+## 📅 Day 24: Dynamic Dashboard Integration & Polish
+**Date:** August 14, 2026
+- Swapped out all mock data on the Dashboard with live data from the backend APIs (`/api/reports/analytics` and `/api/repos`).
+- Implemented robust skeleton loaders for the dashboard to prevent layout shift.
+- Added smooth Framer Motion staggered entrance animations to the dashboard cards.
+- Fixed the layout grid so the dashboard remains reliably responsive and perfectly aligned at 100% zoom on all display sizes.
+
+## Day 25: Vulnerability Triaging & Real-Time Notifications
+**Date:** August 17, 2026
+- Designed and implemented a Vulnerability Triage system: users can now mark findings as "Accept Risk" or "False Positive".
+- Created the `IgnoredFinding` SQLite database model and backend API routes to persist ignored findings.
+- Dynamically recalculated repository vulnerability scores on the backend to exclude ignored findings.
+- Built the `NotificationCenter` React component, hooked up to the header's Bell icon with real-time polling to alert users when background scans complete. Added a custom Skeleton loading layout to eliminate layout shifting on network loads and fixed responsive zoom layouts.
 - **Outcome:** The dashboard is now highly interactive, completely fluid, and displays real-time security posture and trend data directly aggregated from the backend scanning engine. It adapts cleanly across zoom levels and mobile views.
 
 ---

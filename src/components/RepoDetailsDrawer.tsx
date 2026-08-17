@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ShieldAlert, Code, ExternalLink, GitBranch, Download, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import PdfReportTemplate from './PdfReportTemplate';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,17 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
   const [prLoading, setPrLoading] = useState<Record<number, boolean>>({});
   const [prSuccess, setPrSuccess] = useState<Record<number, string>>({});
+  const [showIgnored, setShowIgnored] = useState(false);
   const { token } = useAuth();
+  
+  // We need local state for findings to reflect ignored status instantly
+  const [localFindings, setLocalFindings] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (repo?.findings?.detail) {
+      setLocalFindings(repo.findings.detail);
+    }
+  }, [repo]);
 
   if (!repo) return null;
 
@@ -65,9 +75,45 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
       }
     } catch (error) {
       console.error("AI Review failed:", error);
-      setAiReviews(prev => ({ ...prev, [idx]: { error: "Failed to connect to Gemini API." } }));
+      setAiReviews(prev => ({ ...prev, [idx]: { error: true } }));
     } finally {
       setAiLoading(prev => ({ ...prev, [idx]: false }));
+    }
+  };
+
+  const handleIgnore = async (idx: number, finding: any, reason: string) => {
+    try {
+      const response = await fetch(`/api/repos/${repo.id}/findings/ignore`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ findingHash: finding.hash, reason })
+      });
+      if (response.ok) {
+        setLocalFindings(prev => prev.map((f, i) => i === idx ? { ...f, isIgnored: true } : f));
+      }
+    } catch (e) {
+      console.error("Failed to ignore finding", e);
+    }
+  };
+
+  const handleUnignore = async (idx: number, finding: any) => {
+    try {
+      const response = await fetch(`/api/repos/${repo.id}/findings/unignore`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ findingHash: finding.hash, reason: "unignore" })
+      });
+      if (response.ok) {
+        setLocalFindings(prev => prev.map((f, i) => i === idx ? { ...f, isIgnored: false } : f));
+      }
+    } catch (e) {
+      console.error("Failed to unignore finding", e);
     }
   };
 
@@ -166,16 +212,27 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
 
           {/* Finding Details */}
           <div>
-            <h3 className="font-title-md font-semibold text-on-surface mb-4 flex items-center gap-2">
-              <ShieldAlert className="text-critical" size={20} />
-              Critical Findings
+            <h3 className="font-title-md font-semibold text-on-surface mb-4 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="text-critical" size={20} />
+                Findings
+              </span>
+              <button 
+                onClick={() => setShowIgnored(!showIgnored)}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {showIgnored ? "Hide Ignored" : "Show Ignored"}
+              </button>
             </h3>
             
             <div className="space-y-4">
-              {repo.findings.detail && repo.findings.detail.length > 0 ? (
-                repo.findings.detail.map((finding: any, idx: number) => (
-                  <div key={idx} className={`rounded-xl border ${finding.type === 'SECRET' ? 'border-warning/30 bg-warning-subtle/5' : finding.severity === 'CRITICAL' ? 'border-critical/30 bg-critical-subtle/5' : 'border-warning/30 bg-warning-subtle/5'} overflow-hidden`}>
-                    <div className={`p-4 border-b ${finding.type === 'SECRET' ? 'border-warning/20 bg-warning/5' : finding.severity === 'CRITICAL' ? 'border-critical/20 bg-critical/5' : 'border-warning/20 bg-warning/5'} flex justify-between items-start`}>
+              {localFindings && localFindings.length > 0 ? (
+                localFindings.map((finding: any, idx: number) => {
+                  if (finding.isIgnored && !showIgnored) return null;
+                  
+                  return (
+                  <div key={idx} className={`rounded-xl border ${finding.isIgnored ? 'border-outline-variant/30 bg-surface-container/50 opacity-60' : finding.type === 'SECRET' ? 'border-warning/30 bg-warning-subtle/5' : finding.severity === 'CRITICAL' ? 'border-critical/30 bg-critical-subtle/5' : 'border-warning/30 bg-warning-subtle/5'} overflow-hidden transition-all duration-300`}>
+                    <div className={`p-4 border-b ${finding.isIgnored ? 'border-outline-variant/20 bg-surface-container' : finding.type === 'SECRET' ? 'border-warning/20 bg-warning/5' : finding.severity === 'CRITICAL' ? 'border-critical/20 bg-critical/5' : 'border-warning/20 bg-warning/5'} flex justify-between items-start`}>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`${finding.type === 'SECRET' ? 'bg-orange-500 text-background' : finding.severity === 'CRITICAL' ? 'bg-critical text-background' : 'bg-warning text-background'} text-[10px] uppercase font-bold px-1.5 py-0.5 rounded`}>
@@ -185,8 +242,16 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                             {finding.description}
                           </span>
                         </div>
-                        <h4 className="font-medium text-on-surface">Security Issue Detected</h4>
+                        <h4 className="font-medium text-on-surface">{finding.isIgnored ? "Ignored Finding" : "Security Issue Detected"}</h4>
                       </div>
+                      {finding.isIgnored ? (
+                        <button onClick={() => handleUnignore(idx, finding)} className="text-xs text-primary hover:underline font-medium">Unignore</button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleIgnore(idx, finding, 'accept_risk')} className="text-xs border border-outline-variant/50 hover:bg-surface-variant px-2 py-1 rounded text-on-surface-variant font-medium transition-colors">Accept Risk</button>
+                          <button onClick={() => handleIgnore(idx, finding, 'false_positive')} className="text-xs border border-outline-variant/50 hover:bg-surface-variant px-2 py-1 rounded text-on-surface-variant font-medium transition-colors">False Positive</button>
+                        </div>
+                      )}
                     </div>
                     <div className="p-4 bg-surface-container-lowest flex flex-col gap-4">
                       <div className="rounded-md overflow-hidden border border-outline-variant/30 font-code-sm text-xs">
@@ -202,9 +267,10 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                       </div>
 
                       {/* AI Review Section */}
-                      <div className="mt-2">
-                        {!aiReviews[idx] && !aiLoading[idx] && (
-                          <div className="flex gap-2">
+                      {!finding.isIgnored && (
+                        <div className="mt-2">
+                          {!aiReviews[idx] && !aiLoading[idx] && (
+                            <div className="flex gap-2">
                             <button 
                               onClick={() => handleAiReview(idx, finding)}
                               className="flex items-center gap-2 text-sm bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors font-medium border border-primary/20"
@@ -295,9 +361,10 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
                   </div>
-                ))
+                )})
               ) : (
                 <div className="text-on-surface-variant text-sm p-4 text-center border border-outline-variant/30 rounded-xl border-dashed">
                   No critical findings or secrets detected in this scan.

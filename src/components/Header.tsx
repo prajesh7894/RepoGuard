@@ -1,6 +1,7 @@
-import { Sparkles, Bell, LogOut, Search, User } from 'lucide-react';
+import { Sparkles, LogOut, Search, User } from 'lucide-react';
 import { View } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationCenter from './NotificationCenter';
 
 interface HeaderProps {
   onOpenAiAssistant?: () => void;
@@ -36,9 +37,7 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
                   <Sparkles size={16} />
                   AI Assistant
               </button>
-              <button className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-variant/50 transition-colors cursor-pointer">
-                  <Bell size={18} />
-              </button>
+              <NotificationCenter />
               <button onClick={logout} title="Log out" className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-red-400 hover:bg-surface-variant/50 transition-colors cursor-pointer">
                   <LogOut size={18} />
               </button>

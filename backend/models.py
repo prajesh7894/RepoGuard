@@ -35,6 +35,17 @@ class Scan(Base):
 
     repository = relationship("Repository", back_populates="scans")
 
+class IgnoredFinding(Base):
+    __tablename__ = "IgnoredFinding"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    repoId = Column(Integer, ForeignKey("Repository.id"))
+    findingHash = Column(String, index=True)
+    reason = Column(String) # "false_positive", "accept_risk"
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)
+
+    repository = relationship("Repository")
+
 class User(Base):
     __tablename__ = "User"
 
