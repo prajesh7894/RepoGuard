@@ -56,6 +56,7 @@ class User(Base):
     preferences = Column(String, nullable=True)
     githubToken = Column(String, nullable=True)
     slackWebhook = Column(String, nullable=True)
+    jiraWebhook = Column(String, nullable=True)
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -104,8 +105,18 @@ class OrganizationMember(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     orgId = Column(Integer, ForeignKey("Organization.id"))
     userId = Column(Integer, ForeignKey("User.id"))
-    role = Column(String, default="viewer") # "admin", "editor", "viewer"
+    role = Column(String) # 'admin', 'member', 'viewer'
     createdAt = Column(DateTime, default=datetime.datetime.utcnow)
 
     organization = relationship("Organization", back_populates="members")
     user = relationship("User", back_populates="organizations")
+
+class CustomRule(Base):
+    __tablename__ = "CustomRule"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String)
+    description = Column(String, nullable=True)
+    pattern = Column(String)
+    severity = Column(String) # CRITICAL, HIGH, WARNING, INFO
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)

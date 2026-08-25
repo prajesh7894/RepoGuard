@@ -28,7 +28,10 @@ PYTHON_PATTERNS = [
     (r'(os\.system|subprocess\.(Popen|call|run))\s*\(\s*.*shell\s*=\s*True', 'Command Injection (shell=True)', 'CRITICAL'),
 ]
 
-def regex_scan(repo_path: str):
+def regex_scan(repo_path: str, custom_rules: list = None):
+    if custom_rules is None:
+        custom_rules = []
+        
     findings = []
     for root, dirs, files in os.walk(repo_path):
         if '.git' in dirs:
@@ -48,6 +51,17 @@ def regex_scan(repo_path: str):
                                     'match': line.strip()[:100],
                                     'type': 'Hardcoded Secret',
                                     'severity': 'CRITICAL'
+                                })
+                        
+                        # Custom Rules
+                        for rule in custom_rules:
+                            if re.search(rule['pattern'], line):
+                                findings.append({
+                                    'file': os.path.relpath(filepath, repo_path).replace('\\', '/'),
+                                    'line': i + 1,
+                                    'match': line.strip()[:100],
+                                    'type': rule['name'],
+                                    'severity': rule['severity']
                                 })
                         
                         if file.endswith('.py'):

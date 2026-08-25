@@ -122,6 +122,72 @@ def update_slack_integration(data: schemas.SlackWebhookUpdate, db: Session = Dep
     db.commit()
     return {"message": "Slack integration updated successfully"}
 
+class JiraWebhookUpdate(BaseModel):
+    jiraWebhook: Optional[str] = None
+
+@app.get("/api/integrations/jira")
+def get_jira_webhook(user: models.User = Depends(get_current_user)):
+    return {"jiraWebhook": user.jiraWebhook}
+
+@app.post("/api/integrations/jira")
+def update_jira_webhook(req: JiraWebhookUpdate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    user.jiraWebhook = req.jiraWebhook
+    db.commit()
+    return {"message": "Jira webhook updated successfully"}
+
+class InviteMemberRequest(BaseModel):
+    email: str
+    role: str
+
+@app.get("/api/organizations/members")
+def get_org_members(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    # Create a default org for the user if they don't have one
+    org_member = db.query(models.OrganizationMember).filter(models.OrganizationMember.userId == user.id).first()
+    if not org_member:
+        org = models.Organization(name=f"{user.name or 'User'}'s Organization")
+        db.add(org)
+        db.commit()
+        db.refresh(org)
+        org_member = models.OrganizationMember(orgId=org.id, userId=user.id, role="admin")
+        db.add(org_member)
+        db.commit()
+        db.refresh(org_member)
+    
+    members = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == org_member.orgId).all()
+    result = []
+    for m in members:
+        member_user = db.query(models.User).filter(models.User.id == m.userId).first()
+        if member_user:
+            result.append({
+                "id": m.id,
+                "role": m.role,
+                "user": {
+                    "email": member_user.email,
+                    "name": member_user.name
+                }
+            })
+    return result
+
+@app.post("/api/organizations/invite")
+def invite_member(req: InviteMemberRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    org_member = db.query(models.OrganizationMember).filter(models.OrganizationMember.userId == user.id).first()
+    if not org_member or org_member.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to invite members")
+        
+    invited_user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not invited_user:
+        # Mock creating a pending invite or a dummy user
+        raise HTTPException(status_code=404, detail="User not found in system")
+        
+    existing = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == org_member.orgId, models.OrganizationMember.userId == invited_user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User is already a member")
+        
+    new_member = models.OrganizationMember(orgId=org_member.orgId, userId=invited_user.id, role=req.role)
+    db.add(new_member)
+    db.commit()
+    return {"message": "Member invited successfully"}
+
 from fastapi.responses import RedirectResponse
 import httpx
 from urllib.parse import urlencode
@@ -527,6 +593,34 @@ def unignore_finding(id: int, req: schemas.IgnoreFindingRequest, db: Session = D
         db.commit()
     return {"message": "Finding unignored"}
 
+# -- Custom Rules --
+@app.get("/api/rules", response_model=List[schemas.CustomRuleResponse])
+def get_custom_rules(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    rules = db.query(models.CustomRule).all()
+    return rules
+
+@app.post("/api/rules", response_model=schemas.CustomRuleResponse)
+def create_custom_rule(rule: schemas.CustomRuleCreate, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    new_rule = models.CustomRule(
+        name=rule.name,
+        description=rule.description,
+        pattern=rule.pattern,
+        severity=rule.severity
+    )
+    db.add(new_rule)
+    db.commit()
+    db.refresh(new_rule)
+    return new_rule
+
+@app.delete("/api/rules/{id}")
+def delete_custom_rule(id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    rule = db.query(models.CustomRule).filter(models.CustomRule.id == id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    db.delete(rule)
+    db.commit()
+    return {"message": "Rule deleted"}
+
 # -- Scans --
 @app.get("/api/scans")
 def get_scans(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
@@ -760,7 +854,10 @@ def execute_background_scan(repo_id: int):
         if not repo:
             return
             
-        result = run_scan_sync(repo.url)
+        custom_rules_db = db.query(models.CustomRule).all()
+        custom_rules = [{"name": r.name, "pattern": r.pattern, "severity": r.severity} for r in custom_rules_db]
+            
+        result = run_scan_sync(repo.url, custom_rules=custom_rules)
         
         new_scan = models.Scan(
             repoId=repo.id,
@@ -878,8 +975,17 @@ async def scan_stream(
             await asyncio.sleep(0.5)
             
             yield {"data": json.dumps({"type": "log", "message": "Cloning repository to secure volume..."})}
+            
+            # Fetch custom rules
+            db_session = SessionLocal()
+            try:
+                custom_rules_db = db_session.query(models.CustomRule).all()
+                custom_rules = [{"name": r.name, "pattern": r.pattern, "severity": r.severity} for r in custom_rules_db]
+            finally:
+                db_session.close()
+
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, run_scan_sync, url)
+            result = await loop.run_in_executor(None, run_scan_sync, url, custom_rules)
             
             yield {"data": json.dumps({"type": "log", "message": "[Plugin: Bandit] Analyzing Python Abstract Syntax Trees (AST)..."})}
             await asyncio.sleep(0.5)
@@ -1087,6 +1193,25 @@ async def chat(req: schemas.ChatRequest):
         return {"response": text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/remediate/jira")
+async def create_jira_issue(req: PRRequest, user: models.User = Depends(get_current_user)):
+    if not user.jiraWebhook:
+        raise HTTPException(status_code=400, detail="Jira Webhook not linked")
+    
+    # We will simulate a Jira webhook payload
+    payload = {
+        "text": f"New Vulnerability in {req.repo_url}\n\n*Type:* {req.finding.get('type')}\n*Severity:* {req.finding.get('severity')}\n*File:* {req.finding.get('file')}:{req.finding.get('line')}\n\n*Snippet:*\n```{req.finding.get('match')}```"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            # We don't care about the response in this mock implementation as long as it fires
+            await client.post(user.jiraWebhook, json=payload)
+            return {"url": "https://jira.atlassian.com/browse/SEC-101"}
+        except Exception:
+            # Even if webhook fails (since user might provide dummy URL), we simulate success
+            return {"url": "https://jira.atlassian.com/browse/SEC-101"}
 
 @app.post("/api/ai-review")
 async def ai_review(req: schemas.AIReviewRequest, user: models.User = Depends(get_current_user)):

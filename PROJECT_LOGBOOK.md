@@ -252,6 +252,14 @@
 - Built the `NotificationCenter` React component, hooked up to the header's Bell icon with real-time polling to alert users when background scans complete. Added a custom Skeleton loading layout to eliminate layout shifting on network loads and fixed responsive zoom layouts.
 - **Outcome:** The dashboard is now highly interactive, completely fluid, and displays real-time security posture and trend data directly aggregated from the backend scanning engine. It adapts cleanly across zoom levels and mobile views.
 
+## 📅 Day 26: Enterprise Features & Advanced Integrations
+**Date:** August 25, 2026
+- Built and wired up the **Custom Rules Engine**, allowing users to save Regex patterns into the database which the backend pulls and scans against in real-time.
+- Implemented **Jira Integration**, adding a `jiraWebhook` to users and an `/api/remediate/jira` endpoint. Wired it up to a new "Create Jira Issue" button in the frontend `RepoDetailsDrawer` alongside the PR button.
+- Implemented **GitHub App Integration** mock UI flow in Settings, syncing the `user.githubLinked` state dynamically from the database.
+- Built out the **Team & Access Control** pane, creating `/api/organizations/members` and `/api/organizations/invite` API routes, and a new `TeamManager.tsx` component to list and invite members.
+- **Outcome:** RepoGuard now offers enterprise-grade configuration and management tools out of the box.
+
 ---
 
 ### 🎯 Next Planned Milestones

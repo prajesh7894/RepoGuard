@@ -10,7 +10,7 @@ from .plugins.bandit import bandit_scan
 from .plugins.secrets import secrets_scan
 from .aggregator import aggregate_findings
 
-def run_scan_sync(url: str):
+def run_scan_sync(url: str, custom_rules: list = None):
     temp_dir = tempfile.mkdtemp(prefix="repoguard_scan_")
     
     try:
@@ -21,7 +21,7 @@ def run_scan_sync(url: str):
 
         # Run plugins
         findings = []
-        findings.extend(regex_scan(temp_dir))
+        findings.extend(regex_scan(temp_dir, custom_rules=custom_rules))
         findings.extend(sca_scan(temp_dir))
         findings.extend(bandit_scan(temp_dir))
         findings.extend(secrets_scan(temp_dir))

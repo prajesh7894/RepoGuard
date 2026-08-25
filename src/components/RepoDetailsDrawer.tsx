@@ -9,6 +9,8 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
   const [aiLoading, setAiLoading] = useState<Record<number, boolean>>({});
   const [prLoading, setPrLoading] = useState<Record<number, boolean>>({});
   const [prSuccess, setPrSuccess] = useState<Record<number, string>>({});
+  const [jiraLoading, setJiraLoading] = useState<Record<number, boolean>>({});
+  const [jiraSuccess, setJiraSuccess] = useState<Record<number, string>>({});
   const [showIgnored, setShowIgnored] = useState(false);
   const { token } = useAuth();
   
@@ -40,15 +42,43 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
       const data = await response.json();
       
       if (response.ok) {
-        setPrSuccess(prev => ({ ...prev, [idx]: data.url }));
+        setPrSuccess(prev => ({ ...prev, [findingIdx]: data.url }));
       } else {
         alert(data.detail || "Failed to create PR.");
       }
-    } catch (error) {
-      console.error("PR Creation failed:", error);
-      alert("Failed to create PR due to network error.");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create PR: " + err.message);
     } finally {
-      setPrLoading(prev => ({ ...prev, [idx]: false }));
+      setPrLoading(prev => ({ ...prev, [findingIdx]: false }));
+    }
+  };
+
+  const handleCreateJira = async (findingIdx: number, finding: any) => {
+    setJiraLoading(prev => ({ ...prev, [findingIdx]: true }));
+    try {
+      const res = await fetch('/api/remediate/jira', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          repo_url: repo.url,
+          finding: finding
+        })
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to create Jira Issue');
+      }
+      const data = await res.json();
+      setJiraSuccess(prev => ({ ...prev, [findingIdx]: data.url }));
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create Jira Issue: " + err.message);
+    } finally {
+      setJiraLoading(prev => ({ ...prev, [findingIdx]: false }));
     }
   };
 
@@ -277,26 +307,54 @@ export default function RepoDetailsDrawer({ repo, onClose }: { repo: any, onClos
                             >
                               <Sparkles size={16} /> Analyze with Gemini AI
                             </button>
-                            {!prSuccess[idx] && (
-                              <button
-                                onClick={() => handleCreatePR(idx, finding)}
-                                disabled={prLoading[idx]}
-                                className="flex items-center gap-2 text-sm bg-[#2ea043] hover:bg-[#2c974b] text-white px-4 py-2 rounded-lg transition-colors font-medium border border-transparent disabled:opacity-50"
-                              >
-                                {prLoading[idx] ? (
-                                  <><Loader2 size={16} className="animate-spin" /> Generating Fix...</>
+                            {prSuccess[idx] ? (
+                                  <a href={prSuccess[idx]} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm bg-surface-variant text-on-surface px-4 py-2 rounded-lg font-medium">
+                                    <div className="i-lucide-external-link" style={{width: 16, height: 16}}></div> View PR
+                                  </a>
                                 ) : (
-                                  <><div className="i-lucide-github" style={{width: 16, height: 16}}></div> 1-Click Auto-Fix PR</>
+                                  <button
+                                    onClick={() => handleCreatePR(idx, finding)}
+                                    disabled={prLoading[idx]}
+                                    className="flex items-center gap-2 text-sm bg-[#2ea043] hover:bg-[#2c974b] text-white px-4 py-2 rounded-lg transition-colors font-medium border border-transparent disabled:opacity-50"
+                                  >
+                                    {prLoading[idx] ? (
+                                      <><Loader2 size={16} className="animate-spin" /> Generating Fix...</>
+                                    ) : (
+                                      <><div className="i-lucide-github" style={{width: 16, height: 16}}></div> 1-Click Auto-Fix PR</>
+                                    )}
+                                  </button>
                                 )}
-                              </button>
-                            )}
+                                
+                                {jiraSuccess[idx] ? (
+                                  <a href={jiraSuccess[idx]} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm bg-[#0052CC]/10 text-[#0052CC] px-4 py-2 rounded-lg font-medium">
+                                    <div className="i-lucide-external-link" style={{width: 16, height: 16}}></div> View Ticket
+                                  </a>
+                                ) : (
+                                  <button
+                                    onClick={() => handleCreateJira(idx, finding)}
+                                    disabled={jiraLoading[idx]}
+                                    className="flex items-center gap-2 text-sm bg-surface-variant text-on-surface hover:bg-surface-variant/80 px-4 py-2 rounded-lg transition-colors font-medium border border-transparent disabled:opacity-50"
+                                  >
+                                    {jiraLoading[idx] ? (
+                                      <><Loader2 size={16} className="animate-spin" /> Creating...</>
+                                    ) : (
+                                      <><span className="font-bold">J</span> Create Jira Issue</>
+                                    )}
+                                  </button>
+                                )}
                           </div>
                         )}
                         
                         {prSuccess[idx] && (
                           <div className="flex items-center gap-2 text-success text-sm font-medium p-3 bg-success/10 border border-success/20 rounded-lg mt-2">
                             <CheckCircle2 size={16} />
-                            <span>PR Created: <a href={prSuccess[idx]} target="_blank" rel="noreferrer" className="underline hover:text-success/80">View on GitHub</a></span>
+                            Pull Request created successfully!
+                          </div>
+                        )}
+                        {jiraSuccess[idx] && (
+                          <div className="flex items-center gap-2 text-[#0052CC] text-sm font-medium p-3 bg-[#0052CC]/10 border border-[#0052CC]/20 rounded-lg mt-2">
+                            <CheckCircle2 size={16} />
+                            Jira Issue created successfully!
                           </div>
                         )}
 

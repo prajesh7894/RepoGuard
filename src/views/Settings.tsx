@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Shield, Bell, Github, Key, Users, Webhook } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import CustomRulesManager from '../components/CustomRulesManager';
+import TeamManager from '../components/TeamManager';
 
 export default function Settings() {
   const { token, user } = useAuth();
@@ -143,12 +145,31 @@ export default function Settings() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-on-surface">GitHub App</h4>
-                      <p className="text-sm text-on-surface-variant mt-1">Connected to <span className="font-code-sm text-primary">acme-corp</span> (24 repositories)</p>
+                      <p className="text-sm text-on-surface-variant mt-1">
+                        {user?.githubLinked ? 'Connected and syncing repositories' : 'Not connected'}
+                      </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-sm font-medium rounded transition-colors border border-outline-variant/30 cursor-pointer">
-                    Configure
-                  </button>
+                  {user?.githubLinked ? (
+                    <button className="px-4 py-2 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-sm font-medium rounded transition-colors border border-outline-variant/30 cursor-pointer">
+                      Connected
+                    </button>
+                  ) : (
+                    <a 
+                      href="/api/auth/github/callback?code=mock_code"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        fetch('/api/auth/github/callback', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                          body: JSON.stringify({ code: "mock_code" })
+                        }).then(() => window.location.reload());
+                      }}
+                      className="px-4 py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors cursor-pointer"
+                    >
+                      Connect
+                    </a>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-5 rounded-lg border border-outline-variant/30 bg-surface-container-lowest opacity-75">
@@ -177,18 +198,50 @@ export default function Settings() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-on-surface">Jira Software</h4>
-                      <p className="text-sm text-on-surface-variant mt-1">Automatically create tickets for Critical findings.</p>
+                      <p className="text-sm text-on-surface-variant mt-1">Automatically create tickets for findings.</p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-sm font-medium rounded transition-colors border border-outline-variant/30 cursor-pointer">
-                    Disconnect
+                  <button 
+                    onClick={() => {
+                      const url = prompt("Enter Jira Webhook URL (e.g. Zapier hook):", user?.jiraWebhook || "");
+                      if (url !== null) {
+                        fetch('/api/integrations/jira', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                          body: JSON.stringify({ jiraWebhook: url })
+                        }).then(() => window.location.reload());
+                      }
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-colors border cursor-pointer ${
+                      user?.jiraWebhook 
+                      ? 'bg-surface-variant hover:bg-surface-variant/80 text-on-surface border-outline-variant/30' 
+                      : 'bg-primary-container text-white hover:bg-primary-container/90 border-transparent'
+                    }`}
+                  >
+                    {user?.jiraWebhook ? 'Configure' : 'Connect'}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab !== 'general' && activeTab !== 'integrations' && (
+          {activeTab === 'policies' && (
+            <div className="animate-fade-in-up">
+              <h3 className="text-xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-4">Custom Scan Policies</h3>
+              <p className="text-sm text-on-surface-variant mb-6">Define custom Regex patterns to detect proprietary secrets and internal configurations.</p>
+              
+              <CustomRulesManager token={token} />
+            </div>
+          )}
+
+          {activeTab === 'access' && (
+            <div className="animate-fade-in-up">
+              <h3 className="text-xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-4">Team & Access Control</h3>
+              <TeamManager token={token} />
+            </div>
+          )}
+
+          {activeTab !== 'general' && activeTab !== 'integrations' && activeTab !== 'policies' && activeTab !== 'access' && (
             <div className="h-full flex flex-col items-center justify-center text-on-surface-variant opacity-60 animate-fade-in-up">
               <SettingsIcon size={48} className="mb-4" />
               <p>This settings pane is currently under construction.</p>

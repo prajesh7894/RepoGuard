@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     name: Optional[str] = None
+    hasGithubToken: bool = False
 
     class Config:
         orm_mode = True
@@ -77,3 +78,20 @@ class PreferencesUpdate(BaseModel):
 class IgnoreFindingRequest(BaseModel):
     findingHash: str
     reason: str
+
+class CustomRuleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    pattern: str
+    severity: str
+
+class CustomRuleResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    pattern: str
+    severity: str
+    createdAt: datetime.datetime
+
+    class Config:
+        orm_mode = True
