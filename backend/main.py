@@ -171,12 +171,22 @@ def get_org_members(db: Session = Depends(get_db), user: models.User = Depends(g
 @app.post("/api/organizations/invite")
 def invite_member(req: InviteMemberRequest, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     org_member = db.query(models.OrganizationMember).filter(models.OrganizationMember.userId == user.id).first()
-    if not org_member or org_member.role != "admin":
+    
+    if not org_member:
+        org = models.Organization(name=f"{user.name or 'User'}'s Organization")
+        db.add(org)
+        db.commit()
+        db.refresh(org)
+        org_member = models.OrganizationMember(orgId=org.id, userId=user.id, role="admin")
+        db.add(org_member)
+        db.commit()
+        db.refresh(org_member)
+        
+    if org_member.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to invite members")
         
     invited_user = db.query(models.User).filter(models.User.email == req.email).first()
     if not invited_user:
-        # Mock creating a pending invite or a dummy user
         raise HTTPException(status_code=404, detail="User not found in system")
         
     existing = db.query(models.OrganizationMember).filter(models.OrganizationMember.orgId == org_member.orgId, models.OrganizationMember.userId == invited_user.id).first()
