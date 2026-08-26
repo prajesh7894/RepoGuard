@@ -25,7 +25,7 @@ export default function Reports() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (scanRes.ok) {
-          const scanData = await res.json();
+          const scanData = await scanRes.json();
           const generatedReports = scanData.slice(0, 10).map((scan: any) => ({
              id: `rep-${scan.id}`,
              name: `Scan Report - ${scan.repository?.name || 'Unknown'}`,
@@ -64,11 +64,14 @@ export default function Reports() {
         <div className="glass-card p-6 rounded-xl border border-outline-variant/30 cursor-default">
           <h3 className="font-semibold text-on-surface mb-4">Vulnerability Trend (30 Days)</h3>
           <div className="h-32 flex items-end gap-2">
-            {analytics?.trend ? analytics.trend.map((height: number, i: number) => (
-              <Tooltip key={i} content={`Report ${i + 1}: ${height} issues`}>
-                <div className="flex-1 w-full bg-primary/20 rounded-t-sm hover:bg-primary/40 transition-colors cursor-crosshair" style={{ height: `${Math.min(100, Math.max(10, height * 5))}%`, minWidth: '16px' }}></div>
-              </Tooltip>
-            )) : (
+            {analytics?.trend ? analytics.trend.map((item: any, i: number) => {
+              const totalIssues = item.critical + item.highAndSecrets;
+              return (
+                <Tooltip key={i} content={`${item.fullDate}: ${totalIssues} issues`}>
+                  <div className="flex-1 w-full bg-primary/20 rounded-t-sm hover:bg-primary/40 transition-colors cursor-crosshair" style={{ height: `${Math.min(100, Math.max(10, totalIssues * 5))}%`, minWidth: '16px' }}></div>
+                </Tooltip>
+              );
+            }) : (
                <div className="flex-1 w-full flex items-center justify-center text-sm text-on-surface-variant">Loading...</div>
             )}
           </div>
@@ -80,7 +83,7 @@ export default function Reports() {
         <div className="glass-card p-6 rounded-xl border border-outline-variant/30 cursor-default">
           <h3 className="font-semibold text-on-surface mb-4">Severity Distribution</h3>
           <div className="flex h-32 items-center justify-center gap-6">
-            <Tooltip content={analytics ? `Critical: ${analytics.severity.critical}, High: ${analytics.severity.high}, Medium: ${analytics.severity.medium}` : "Loading"}>
+            <Tooltip content={analytics ? `Critical: ${analytics.severity.critical}, High: ${analytics.severity.high}, Secrets: ${analytics.severity.secrets}` : "Loading"}>
               <div className="relative w-24 h-24 rounded-full border-[8px] border-critical flex items-center justify-center cursor-help">
                 <span className="text-xl font-bold text-on-surface">{analytics?.severity?.critical || 0}</span>
               </div>
@@ -88,7 +91,7 @@ export default function Reports() {
             <div className="flex flex-col gap-2 text-sm">
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-critical"></div> Critical</div>
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-warning"></div> High</div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary"></div> Medium</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary"></div> Secrets</div>
             </div>
           </div>
         </div>
