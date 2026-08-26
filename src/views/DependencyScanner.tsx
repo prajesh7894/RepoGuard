@@ -36,6 +36,8 @@ export default function DependencyScanner() {
               try {
                 const findings = JSON.parse(scan.findingsDetail);
                 const depFindings = findings.filter((f: any) => 
+                  f.type?.toLowerCase().includes('dependency') || 
+                  f.type?.toLowerCase().includes('cve') ||
                   !f.type?.toLowerCase().includes('secret')
                 );
                 
@@ -48,13 +50,15 @@ export default function DependencyScanner() {
                     cve: f.type,
                     severity: f.severity.toLowerCase(),
                     status: 'vulnerable',
-                    fixedIn: 'Upgrade recommended'
+                    fixedIn: 'Upgrade recommended',
+                    date: new Date(scan.createdAt).toLocaleDateString()
                   });
                 });
               } catch (e) {}
             }
           });
-          setDependencies(allDeps);
+          // Limit to 100 findings to prevent React from lagging/hanging
+          setDependencies(allDeps.slice(0, 100));
         }
       } catch (err) {
         console.error(err);

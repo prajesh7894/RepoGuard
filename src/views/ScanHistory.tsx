@@ -16,7 +16,8 @@ export default function ScanHistory() {
         });
         if (!res.ok) throw new Error("Failed to fetch scans");
         const data = await res.json();
-        setScans(Array.isArray(data) ? data : []);
+        // Limit to 50 scans to prevent the browser from lagging/hanging
+        setScans(Array.isArray(data) ? data.slice(0, 50) : []);
       } catch (error) {
         console.error('Failed to fetch scans:', error);
       } finally {

@@ -24,9 +24,12 @@ export default function SecretScanner() {
             if (scan.findingsDetail) {
               try {
                 const findings = JSON.parse(scan.findingsDetail);
-                const secretFindings = findings;
+                // Filter out dependency and CVE findings, keep secrets/rules
+                const secretFindings = findings.filter((f: any) => 
+                  !f.type?.toLowerCase().includes('dependency') && 
+                  !f.type?.toLowerCase().includes('cve')
+                );
                 
-
                 secretFindings.forEach((f: any, i: number) => {
                   allSecrets.push({
                     id: `SEC-${scan.id}-${i}`,
@@ -44,7 +47,8 @@ export default function SecretScanner() {
               } catch (e) {}
             }
           });
-          setSecrets(allSecrets);
+          // Limit to 100 findings to prevent React from lagging/hanging
+          setSecrets(allSecrets.slice(0, 100));
         }
       } catch (err) {
         console.error(err);
