@@ -50,19 +50,59 @@ export default function Integrations() {
     }
   };
 
-  const handleDisconnect = async () => {
+  const handleConnect = async (id: string) => {
+    if (id === 'slack') {
+      setIsModalOpen(true);
+    } else if (id === 'github') {
+      try {
+        await fetch('/api/auth/github/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ code: "mock_code" })
+        });
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+      }
+    } else if (id === 'jira') {
+      const url = prompt("Enter Jira Webhook URL (e.g. Zapier hook):", user?.jiraWebhook || "");
+      if (url !== null) {
+        try {
+          await fetch('/api/integrations/jira', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ jiraWebhook: url })
+          });
+          window.location.reload();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    } else {
+      alert(`${id} integration coming soon!`);
+    }
+  };
+
+  const handleDisconnect = async (id: string) => {
     setSaving(true);
     try {
-      const res = await fetch('/api/integrations/slack', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ slackWebhook: null })
-      });
-      if (res.ok) {
-        setSlackWebhook(null);
+      if (id === 'slack') {
+        const res = await fetch('/api/integrations/slack', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ slackWebhook: null })
+        });
+        if (res.ok) setSlackWebhook(null);
+      } else if (id === 'github') {
+        // Mock disconnect
+        alert("GitHub disconnected.");
+      } else if (id === 'jira') {
+        await fetch('/api/integrations/jira', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ jiraWebhook: null })
+        });
+        window.location.reload();
       }
     } catch (err) {
       console.error(err);
@@ -120,16 +160,14 @@ export default function Integrations() {
             <div className="mt-auto">
               {integration.status === 'connected' ? (
                 <button 
-                  onClick={() => integration.id === 'slack' ? handleDisconnect() : null}
+                  onClick={() => handleDisconnect(integration.id)}
                   className="w-full py-2 bg-surface-variant/50 text-on-surface text-sm font-medium rounded hover:bg-surface-variant transition-colors border border-outline-variant/30 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {integration.id === 'slack' ? (saving ? 'Disconnecting...' : 'Disconnect') : <><ExternalLink size={14} /> Manage</>}
+                  {saving && integration.id === 'slack' ? 'Disconnecting...' : 'Disconnect'}
                 </button>
               ) : (
                 <button 
-                  onClick={() => {
-                    if (integration.id === 'slack') setIsModalOpen(true);
-                  }}
+                  onClick={() => handleConnect(integration.id)}
                   className="w-full py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(37,99,235,0.1)]"
                 >
                   <Plus size={16} /> Connect
