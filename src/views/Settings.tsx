@@ -165,7 +165,7 @@ export default function Settings() {
                             body: JSON.stringify({ code: "mock_code" })
                           }).then(() => window.location.reload());
                         }}
-                        className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:-translate-y-0.5"
+                        className="px-5 py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5"
                       >
                         <Plus size={16} />
                         Connect
@@ -307,7 +307,7 @@ export default function Settings() {
                      <option>90 days</option>
                      <option>No expiration</option>
                    </select>
-                   <button className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:-translate-y-0.5">
+                   <button className="px-5 py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5">
                      <Plus size={16} />
                      Generate Token
                    </button>
