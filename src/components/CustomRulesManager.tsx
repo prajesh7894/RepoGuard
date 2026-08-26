@@ -122,9 +122,11 @@ export default function CustomRulesManager({ token }: { token: string | null }) 
               className="w-full bg-surface-container border border-outline-variant/30 rounded px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-3 mt-6">
             <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white text-sm font-medium rounded hover:bg-primary/90">Save Rule</button>
+            <button type="submit" className="px-5 py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5 cursor-pointer">
+              Save Rule
+            </button>
           </div>
         </form>
       )}

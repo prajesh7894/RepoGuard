@@ -34,7 +34,9 @@ export default function Pricing() {
               <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Automated AI Remediation PRs</li>
               <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Dependency vulnerabilities (OSV)</li>
             </ul>
-            <button className="w-full py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Upgrade to Pro</button>
+              <button className="w-full py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5 cursor-pointer">
+                Upgrade to Pro
+              </button>
           </div>
           
           <div className="glass-card p-8 flex flex-col hover:-translate-y-1 transition-transform">

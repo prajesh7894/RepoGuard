@@ -63,8 +63,9 @@ export default function Reports() {
               alert("No scans available to generate a report.");
             }
           }}
-          className="bg-primary-container text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-container/90 transition-colors cursor-pointer flex items-center gap-2 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+          className="px-5 py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5 cursor-pointer"
         >
+          <Download size={16} />
           Generate New Report
         </button>
       </div>

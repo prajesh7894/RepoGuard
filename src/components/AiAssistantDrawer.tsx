@@ -96,8 +96,8 @@ export default function AiAssistantDrawer({ isOpen, onClose }: { isOpen: boolean
               className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-full pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-surface"
               disabled={isTyping}
             />
-            <button onClick={handleSend} disabled={isTyping} className="absolute right-2 p-2 rounded-full bg-primary text-on-primary hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-              <Send size={16} />
+            <button onClick={handleSend} disabled={isTyping} className="absolute right-2 p-2 rounded-full bg-primary-container text-white shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:shadow-[0_0_15px_rgba(37,99,235,0.6)] hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              <Send size={18} className={isTyping ? "opacity-50" : ""} />
             </button>
           </div>
         </div>
