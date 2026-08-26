@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Shield, Bell, Github, Key, Users, Webhook } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, Bell, Github, Key, Users, Webhook, Plus, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import CustomRulesManager from '../components/CustomRulesManager';
 import TeamManager from '../components/TeamManager';
@@ -155,20 +155,21 @@ export default function Settings() {
                       Connected
                     </button>
                   ) : (
-                    <a 
-                      href="/api/auth/github/callback?code=mock_code"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        fetch('/api/auth/github/callback', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                          body: JSON.stringify({ code: "mock_code" })
-                        }).then(() => window.location.reload());
-                      }}
-                      className="px-4 py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors cursor-pointer"
-                    >
-                      Connect
-                    </a>
+                      <a 
+                        href="/api/auth/github/callback?code=mock_code"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          fetch('/api/auth/github/callback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ code: "mock_code" })
+                          }).then(() => window.location.reload());
+                        }}
+                        className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:-translate-y-0.5"
+                      >
+                        <Plus size={16} />
+                        Connect
+                      </a>
                   )}
                 </div>
 
@@ -182,7 +183,8 @@ export default function Settings() {
                       <p className="text-sm text-on-surface-variant mt-1">Not connected</p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors cursor-pointer">
+                  <button className="px-5 py-2 bg-[#FC6D26] text-white text-sm font-bold rounded-lg hover:bg-[#E24329] transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_15px_rgba(252,109,38,0.4)] hover:shadow-[0_0_25px_rgba(252,109,38,0.6)] hover:-translate-y-0.5">
+                    <Plus size={16} />
                     Connect
                   </button>
                 </div>
@@ -201,25 +203,26 @@ export default function Settings() {
                       <p className="text-sm text-on-surface-variant mt-1">Automatically create tickets for findings.</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => {
-                      const url = prompt("Enter Jira Webhook URL (e.g. Zapier hook):", user?.jiraWebhook || "");
-                      if (url !== null) {
-                        fetch('/api/integrations/jira', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                          body: JSON.stringify({ jiraWebhook: url })
-                        }).then(() => window.location.reload());
-                      }
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-colors border cursor-pointer ${
-                      user?.jiraWebhook 
-                      ? 'bg-surface-variant hover:bg-surface-variant/80 text-on-surface border-outline-variant/30' 
-                      : 'bg-primary-container text-white hover:bg-primary-container/90 border-transparent'
-                    }`}
-                  >
-                    {user?.jiraWebhook ? 'Configure' : 'Connect'}
-                  </button>
+                    <button 
+                      onClick={() => {
+                        const url = prompt("Enter Jira Webhook URL (e.g. Zapier hook):", user?.jiraWebhook || "");
+                        if (url !== null) {
+                          fetch('/api/integrations/jira', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ jiraWebhook: url })
+                          }).then(() => window.location.reload());
+                        }
+                      }}
+                      className={`px-5 py-2 text-sm font-bold rounded-lg transition-all border cursor-pointer flex items-center gap-2 ${
+                        user?.jiraWebhook 
+                        ? 'bg-surface-variant hover:bg-surface-variant/80 text-on-surface border-outline-variant/30 shadow-sm' 
+                        : 'bg-[#0052CC] hover:bg-[#0047b3] text-white border-transparent shadow-[0_0_15px_rgba(0,82,204,0.4)] hover:shadow-[0_0_25px_rgba(0,82,204,0.6)] hover:-translate-y-0.5'
+                      }`}
+                    >
+                      {!user?.jiraWebhook && <Plus size={16} />}
+                      {user?.jiraWebhook ? 'Configure' : 'Connect'}
+                    </button>
                 </div>
               </div>
             </div>
@@ -280,7 +283,8 @@ export default function Settings() {
                       <h4 className="font-semibold text-on-surface">Slack Integration</h4>
                       <p className="text-sm text-on-surface-variant">Send alerts to a Slack channel.</p>
                     </div>
-                    <button className="px-4 py-2 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-sm font-medium rounded transition-colors border border-outline-variant/30 cursor-pointer">
+                    <button className="px-5 py-2 bg-[#4A154B] hover:bg-[#611f69] text-white text-sm font-bold rounded-lg transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_15px_rgba(74,21,75,0.4)] hover:shadow-[0_0_25px_rgba(74,21,75,0.6)] hover:-translate-y-0.5">
+                      <MessageSquare size={16} />
                       Connect Slack
                     </button>
                   </div>
@@ -296,17 +300,18 @@ export default function Settings() {
               
               <div className="glass-card p-6 border border-outline-variant/30 mb-8">
                 <h4 className="font-semibold text-on-surface mb-4">Generate New Token</h4>
-                <div className="flex gap-4">
+                 <div className="flex gap-4">
                    <input type="text" placeholder="Token description (e.g. Jenkins CI)" className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary/50" />
                    <select className="bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none">
                      <option>30 days</option>
                      <option>90 days</option>
                      <option>No expiration</option>
                    </select>
-                   <button className="px-4 py-2 bg-primary text-white text-sm font-medium rounded hover:bg-primary/90 transition-colors cursor-pointer whitespace-nowrap">
+                   <button className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:-translate-y-0.5">
+                     <Plus size={16} />
                      Generate Token
                    </button>
-                </div>
+                 </div>
               </div>
 
               <div>
