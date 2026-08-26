@@ -241,10 +241,97 @@ export default function Settings() {
             </div>
           )}
 
-          {activeTab !== 'general' && activeTab !== 'integrations' && activeTab !== 'policies' && activeTab !== 'access' && (
-            <div className="h-full flex flex-col items-center justify-center text-on-surface-variant opacity-60 animate-fade-in-up">
-              <SettingsIcon size={48} className="mb-4" />
-              <p>This settings pane is currently under construction.</p>
+          {activeTab === 'alerts' && (
+            <div className="animate-fade-in-up">
+              <h3 className="text-xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-4">Alerts & Notifications</h3>
+              <p className="text-sm text-on-surface-variant mb-6">Choose how and when you want to be notified about security events.</p>
+              
+              <div className="space-y-6">
+                <div className="glass-card p-5 border border-outline-variant/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-semibold text-on-surface">Email Notifications</h4>
+                      <p className="text-sm text-on-surface-variant">Receive alerts in your inbox.</p>
+                    </div>
+                    <div className="relative inline-block w-12 h-6 rounded-full bg-primary/20 cursor-pointer border border-primary/30">
+                       <div className="absolute top-0.5 left-6 w-5 h-5 rounded-full bg-primary shadow-sm transition-all"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 pl-2 border-l-2 border-outline-variant/30 ml-2 mt-4">
+                     <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" defaultChecked className="w-4 h-4 text-primary bg-surface border-outline-variant/50 rounded" />
+                        <span className="text-sm text-on-surface-variant">Critical vulnerabilities found</span>
+                     </label>
+                     <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" defaultChecked className="w-4 h-4 text-primary bg-surface border-outline-variant/50 rounded" />
+                        <span className="text-sm text-on-surface-variant">New secrets detected in commits</span>
+                     </label>
+                     <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" className="w-4 h-4 text-primary bg-surface border-outline-variant/50 rounded" />
+                        <span className="text-sm text-on-surface-variant">Weekly executive summary reports</span>
+                     </label>
+                  </div>
+                </div>
+
+                <div className="glass-card p-5 border border-outline-variant/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-on-surface">Slack Integration</h4>
+                      <p className="text-sm text-on-surface-variant">Send alerts to a Slack channel.</p>
+                    </div>
+                    <button className="px-4 py-2 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-sm font-medium rounded transition-colors border border-outline-variant/30 cursor-pointer">
+                      Connect Slack
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'api' && (
+            <div className="animate-fade-in-up">
+              <h3 className="text-xl font-bold text-on-surface mb-6 border-b border-outline-variant/30 pb-4">API Tokens</h3>
+              <p className="text-sm text-on-surface-variant mb-6">Generate Personal Access Tokens to authenticate with the RepoGuard API in your CI/CD pipelines.</p>
+              
+              <div className="glass-card p-6 border border-outline-variant/30 mb-8">
+                <h4 className="font-semibold text-on-surface mb-4">Generate New Token</h4>
+                <div className="flex gap-4">
+                   <input type="text" placeholder="Token description (e.g. Jenkins CI)" className="flex-1 bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary/50" />
+                   <select className="bg-surface-container-highest border border-outline-variant/30 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none">
+                     <option>30 days</option>
+                     <option>90 days</option>
+                     <option>No expiration</option>
+                   </select>
+                   <button className="px-4 py-2 bg-primary text-white text-sm font-medium rounded hover:bg-primary/90 transition-colors cursor-pointer whitespace-nowrap">
+                     Generate Token
+                   </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-on-surface mb-4">Active Tokens</h4>
+                <div className="border border-outline-variant/30 rounded-lg overflow-hidden">
+                   <div className="bg-surface-variant/30 px-4 py-3 flex items-center justify-between text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                      <span>Description</span>
+                      <span className="w-32">Created</span>
+                      <span className="w-32">Expires</span>
+                      <span className="w-20 text-right">Actions</span>
+                   </div>
+                   <div className="px-4 py-3 flex items-center justify-between border-t border-outline-variant/30 text-sm">
+                      <span className="text-on-surface font-medium flex items-center gap-2"><Key size={14} className="text-primary"/> GitHub Actions</span>
+                      <span className="w-32 text-on-surface-variant">Oct 12, 2025</span>
+                      <span className="w-32 text-on-surface-variant">Nov 11, 2025</span>
+                      <button className="w-20 text-right text-red-400 hover:text-red-300 transition-colors cursor-pointer">Revoke</button>
+                   </div>
+                   <div className="px-4 py-3 flex items-center justify-between border-t border-outline-variant/30 text-sm">
+                      <span className="text-on-surface font-medium flex items-center gap-2"><Key size={14} className="text-primary"/> Local Dev CLI</span>
+                      <span className="w-32 text-on-surface-variant">Sep 01, 2025</span>
+                      <span className="w-32 text-on-surface-variant">Never</span>
+                      <button className="w-20 text-right text-red-400 hover:text-red-300 transition-colors cursor-pointer">Revoke</button>
+                   </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
