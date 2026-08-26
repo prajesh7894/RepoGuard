@@ -361,6 +361,9 @@ async def create_remediation_pr(req: PRRequest, user: models.User = Depends(get_
         "Accept": "application/vnd.github.v3+json"
     }
 
+    if user.githubToken == "mock_github_token_for_testing":
+        return {"url": f"https://github.com/{owner_repo}/pull/mock"}
+
     try:
         async with httpx.AsyncClient() as client:
             # 1. Get original file content

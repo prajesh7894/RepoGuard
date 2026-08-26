@@ -18,6 +18,19 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
   });
   const logsEndRef = useRef<HTMLDivElement>(null);
   
+  const [repos, setRepos] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (token) {
+      fetch('/api/repos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => setRepos(Array.isArray(data) ? data : []))
+      .catch(err => console.error("Failed to fetch repos", err));
+    }
+  }, [token]);
+
   const totalSteps = 3;
 
   useEffect(() => {
@@ -35,8 +48,8 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
     
     let url = repoUrl;
     if (!url) {
-       // fallback for the mock connected repos
-       url = 'https://github.com/expressjs/express.git';
+       alert("Please select a repository or enter a URL.");
+       return;
     }
 
     let eventSource: EventSource | null = null;
@@ -162,23 +175,21 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
                         <h4 className="font-body-lg font-medium">Connected Repositories</h4>
                       </div>
                       <p className="font-body-sm text-body-sm text-on-surface-variant mb-4">Choose from repositories already linked to your RepoGuard workspace.</p>
-                      <div className="space-y-2">
-                        <label className="flex items-center p-3 rounded bg-surface-container-lowest border border-outline-variant/20 cursor-pointer hover:bg-surface-variant/30">
-                          <input className="form-radio text-primary bg-transparent border-outline-variant mr-3 focus:ring-primary focus:ring-offset-0" name="repo_select" type="radio" onChange={() => setRepoUrl('https://github.com/OWASP/NodeGoat.git')} />
-                          <div className="flex-1">
-                            <div className="font-code-sm text-code-sm font-medium">OWASP/NodeGoat</div>
-                            <div className="text-[11px] text-on-surface-variant">Intentionally vulnerable app</div>
-                          </div>
-                          <Lock className="text-outline-variant" size={14} />
-                        </label>
-                        <label className="flex items-center p-3 rounded bg-surface-container-lowest border border-outline-variant/20 cursor-pointer hover:bg-surface-variant/30">
-                          <input className="form-radio text-primary bg-transparent border-outline-variant mr-3 focus:ring-primary focus:ring-offset-0" name="repo_select" type="radio" onChange={() => setRepoUrl('https://github.com/expressjs/express.git')} />
-                          <div className="flex-1">
-                            <div className="font-code-sm text-code-sm font-medium">expressjs/express</div>
-                            <div className="text-[11px] text-on-surface-variant">Popular web framework</div>
-                          </div>
-                          <Lock className="text-outline-variant" size={14} />
-                        </label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        {repos.length === 0 ? (
+                          <div className="text-sm text-on-surface-variant p-2">No connected repositories yet.</div>
+                        ) : (
+                          repos.map(repo => (
+                            <label key={repo.id} className="flex items-center p-3 rounded bg-surface-container-lowest border border-outline-variant/20 cursor-pointer hover:bg-surface-variant/30">
+                              <input className="form-radio text-primary bg-transparent border-outline-variant mr-3 focus:ring-primary focus:ring-offset-0" name="repo_select" type="radio" onChange={() => setRepoUrl(repo.url)} />
+                              <div className="flex-1">
+                                <div className="font-code-sm text-code-sm font-medium truncate max-w-[200px]">{repo.name}</div>
+                                <div className="text-[11px] text-on-surface-variant truncate max-w-[200px]">{repo.url}</div>
+                              </div>
+                              {repo.visibility === 'Private' ? <Lock className="text-outline-variant shrink-0" size={14} /> : <Unlock className="text-outline-variant shrink-0" size={14} />}
+                            </label>
+                          ))
+                        )}
                       </div>
                     </div>
 

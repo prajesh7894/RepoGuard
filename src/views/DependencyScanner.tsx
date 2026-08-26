@@ -8,15 +8,33 @@ export default function DependencyScanner() {
   const [loading, setLoading] = useState(true);
   const [fixing, setFixing] = useState<Record<string, boolean>>({});
 
-  const handleFixPR = (depId: string) => {
+  const handleFixPR = async (depId: string, finding: any, repoUrl: string) => {
     setFixing(prev => ({ ...prev, [depId]: true }));
-    setTimeout(() => {
-      setDependencies(prev => prev.map(d => 
-        d.id === depId ? { ...d, status: 'patched' } : d
-      ));
+    try {
+      const response = await fetch('/api/remediate/pr', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ finding, repo_url: repoUrl })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setDependencies(prev => prev.map(d => 
+          d.id === depId ? { ...d, status: 'patched' } : d
+        ));
+        alert(`PR created successfully! Link: ${data.url}`);
+      } else {
+        alert(data.detail || "Failed to create PR.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create PR: " + err.message);
+    } finally {
       setFixing(prev => ({ ...prev, [depId]: false }));
-      alert("Mock PR created successfully to update this dependency!");
-    }, 1500);
+    }
   };
 
   const [autoPREnabled, setAutoPREnabled] = useState(false);
@@ -47,6 +65,8 @@ export default function DependencyScanner() {
                     package: f.match ? f.match.substring(0, 20) + '...' : f.type,
                     version: 'unknown',
                     repo: scan.repository?.name || 'Unknown',
+                    repoUrl: scan.repository?.url || '',
+                    finding: f,
                     cve: f.type,
                     severity: f.severity.toLowerCase(),
                     status: 'vulnerable',
@@ -206,7 +226,7 @@ export default function DependencyScanner() {
                      <div className="flex justify-end gap-2">
                         {dep.status === 'vulnerable' && (
                            <button 
-                             onClick={() => handleFixPR(dep.id)}
+                             onClick={() => handleFixPR(dep.id, dep.finding, dep.repoUrl)}
                              disabled={fixing[dep.id]}
                              className="px-3 py-1.5 bg-primary-container hover:bg-primary-container/90 text-white text-xs font-medium rounded transition-colors flex items-center gap-1 shadow-[0_0_10px_rgba(37,99,235,0.2)] disabled:opacity-50"
                            >
