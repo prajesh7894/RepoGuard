@@ -3,7 +3,7 @@ import { Shield, Zap, Search, Lock } from 'lucide-react';
 
 export default function Product() {
   return (
-    <div className="p-8 pb-32 overflow-y-auto w-full h-full custom-scrollbar">
+    <div className="pt-24 pb-32 px-8 overflow-y-auto w-full h-full custom-scrollbar">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-4">RepoGuard Product Features</h1>
