@@ -1,15 +1,47 @@
-import { Sparkles, LogOut, Search, User } from 'lucide-react';
-import { View } from '../types';
-import { useAuth } from '../contexts/AuthContext';
+import { Search, Sparkles, LogOut, FolderCode, History } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
+import { useAuth } from '../contexts/AuthContext';
+import { View } from '../types';
+import { useState, useEffect } from 'react';
 
 interface HeaderProps {
-  onOpenAiAssistant?: () => void;
+  onOpenAiAssistant: () => void;
   setView: (view: View) => void;
 }
 
 export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{repos: any[], scans: any[]}>({ repos: [], scans: [] });
+
+  useEffect(() => {
+    if (!searchQuery.trim() || !token) return;
+    const fetchSearch = async () => {
+      try {
+        const [reposRes, scansRes] = await Promise.all([
+          fetch('/api/repos', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/scans', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        const repos = await reposRes.json();
+        const scans = await scansRes.json();
+        
+        const filteredRepos = Array.isArray(repos) ? repos.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())) : [];
+        const filteredScans = Array.isArray(scans) ? scans.filter(s => s.repository?.name?.toLowerCase().includes(searchQuery.toLowerCase())) : [];
+        
+        setSearchResults({
+          repos: filteredRepos.slice(0, 3),
+          scans: filteredScans.slice(0, 3)
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    
+    const timeout = setTimeout(fetchSearch, 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, token]);
   
   return (
     <div className="fixed top-4 right-4 left-4 md:left-[272px] z-40">
@@ -21,7 +53,41 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
                   className="bg-surface-container-highest border border-outline-variant/30 rounded-full pl-10 pr-4 py-1 text-body-sm font-body-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-on-surface placeholder:text-on-surface-variant/50 w-40 lg:w-48 xl:w-64 input-glow" 
                   placeholder="Search repositories, scans..." 
                   type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
               />
+              
+              {isSearchOpen && searchQuery && (
+                <div className="absolute top-full left-0 mt-2 w-80 bg-surface-container-high border border-outline-variant/30 rounded-xl shadow-lg overflow-hidden py-2 z-50">
+                  {searchResults.repos.length > 0 && (
+                    <div className="px-4 py-2">
+                      <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Repositories</h4>
+                      {searchResults.repos.map((r: any) => (
+                        <div key={r.id} onClick={() => setView('repositories')} className="cursor-pointer py-1.5 px-2 hover:bg-surface-variant/50 rounded flex items-center gap-2">
+                           <FolderCode size={14} className="text-primary" />
+                           <span className="text-sm font-medium truncate">{r.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults.scans.length > 0 && (
+                    <div className="px-4 py-2">
+                      <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Recent Scans</h4>
+                      {searchResults.scans.map((s: any) => (
+                        <div key={s.id} onClick={() => setView('scan_history')} className="cursor-pointer py-1.5 px-2 hover:bg-surface-variant/50 rounded flex items-center gap-2">
+                           <History size={14} className="text-secondary" />
+                           <span className="text-sm truncate">Scan on {s.repository?.name || 'Unknown'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults.repos.length === 0 && searchResults.scans.length === 0 && (
+                    <div className="px-4 py-3 text-sm text-on-surface-variant">No results found for "{searchQuery}"</div>
+                  )}
+                </div>
+              )}
           </div>
         </div>
         <div className="flex items-center gap-6">
