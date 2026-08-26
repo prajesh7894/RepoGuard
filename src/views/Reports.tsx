@@ -55,7 +55,16 @@ export default function Reports() {
           </h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">Generate, schedule, and export security compliance reports.</p>
         </div>
-        <button className="bg-primary-container text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-container/90 transition-colors cursor-pointer flex items-center gap-2 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
+        <button 
+          onClick={() => {
+            if (reports.length > 0) {
+              window.location.href = `/api/scans/${reports[0].scan.id}/export/pdf`;
+            } else {
+              alert("No scans available to generate a report.");
+            }
+          }}
+          className="bg-primary-container text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-container/90 transition-colors cursor-pointer flex items-center gap-2 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+        >
           Generate New Report
         </button>
       </div>
