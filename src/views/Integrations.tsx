@@ -3,7 +3,7 @@ import { Puzzle, CheckCircle2, Webhook, Plus, ExternalLink, ArrowRight, X } from
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Integrations() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [slackWebhook, setSlackWebhook] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newWebhook, setNewWebhook] = useState('');
@@ -72,10 +72,10 @@ export default function Integrations() {
   };
 
   const integrations = [
-    { id: 'github', name: 'GitHub', category: 'Version Control', status: 'connected', desc: 'Scan code, PRs, and commits automatically.' },
+    { id: 'github', name: 'GitHub', category: 'Version Control', status: user?.githubLinked ? 'connected' : 'available', desc: 'Scan code, PRs, and commits automatically.' },
     { id: 'gitlab', name: 'GitLab', category: 'Version Control', status: 'available', desc: 'Integrate with GitLab repositories and pipelines.' },
     { id: 'slack', name: 'Slack', category: 'Notifications', status: slackWebhook ? 'connected' : 'available', desc: 'Receive real-time alerts in Slack channels.' },
-    { id: 'jira', name: 'Jira Software', category: 'Issue Tracking', status: 'available', desc: 'Automatically sync vulnerabilities as Jira tickets.' },
+    { id: 'jira', name: 'Jira Software', category: 'Issue Tracking', status: user?.jiraWebhook ? 'connected' : 'available', desc: 'Automatically sync vulnerabilities as Jira tickets.' },
     { id: 'datadog', name: 'DataDog', category: 'Monitoring', status: 'available', desc: 'Export security metrics to DataDog dashboards.' },
     { id: 'snyk', name: 'Snyk Import', category: 'Data Sync', status: 'available', desc: 'Import historical findings from Snyk.' },
   ];
