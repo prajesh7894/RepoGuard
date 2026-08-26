@@ -94,8 +94,11 @@ export default function Integrations() {
         });
         if (res.ok) setSlackWebhook(null);
       } else if (id === 'github') {
-        // Mock disconnect
-        alert("GitHub disconnected.");
+        await fetch('/api/auth/github/disconnect', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        window.location.reload();
       } else if (id === 'jira') {
         await fetch('/api/integrations/jira', {
           method: 'POST',
@@ -113,11 +116,8 @@ export default function Integrations() {
 
   const integrations = [
     { id: 'github', name: 'GitHub', category: 'Version Control', status: user?.githubLinked ? 'connected' : 'available', desc: 'Scan code, PRs, and commits automatically.' },
-    { id: 'gitlab', name: 'GitLab', category: 'Version Control', status: 'available', desc: 'Integrate with GitLab repositories and pipelines.' },
     { id: 'slack', name: 'Slack', category: 'Notifications', status: slackWebhook ? 'connected' : 'available', desc: 'Receive real-time alerts in Slack channels.' },
     { id: 'jira', name: 'Jira Software', category: 'Issue Tracking', status: user?.jiraWebhook ? 'connected' : 'available', desc: 'Automatically sync vulnerabilities as Jira tickets.' },
-    { id: 'datadog', name: 'DataDog', category: 'Monitoring', status: 'available', desc: 'Export security metrics to DataDog dashboards.' },
-    { id: 'snyk', name: 'Snyk Import', category: 'Data Sync', status: 'available', desc: 'Import historical findings from Snyk.' },
   ];
 
   return (

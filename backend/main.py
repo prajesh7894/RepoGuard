@@ -290,6 +290,12 @@ async def github_callback(payload: dict, db: Session = Depends(get_db), user: mo
 
     return {"message": "GitHub linked successfully and repositories synced"}
 
+@app.post("/api/auth/github/disconnect")
+def github_disconnect(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    user.githubToken = None
+    db.commit()
+    return {"message": "GitHub unlinked"}
+
 class WebhookRequest(BaseModel):
     webhook_url: str
 
