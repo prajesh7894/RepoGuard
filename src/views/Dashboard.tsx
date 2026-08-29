@@ -133,8 +133,31 @@ export default function Dashboard() {
           Refresh
         </button>
       </div>
-      
-      <motion.div 
+
+      {repos.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full glass-card p-12 flex flex-col items-center justify-center text-center mt-4 border border-dashed border-outline-variant/50 relative overflow-hidden"
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="w-24 h-24 rounded-full bg-surface-container-highest/50 flex items-center justify-center mb-6 relative z-10 border border-outline-variant/30">
+            <Radar className="w-12 h-12 text-primary" />
+          </div>
+          <h3 className="text-2xl font-bold text-on-surface mb-3 relative z-10">Your Dashboard is Waiting</h3>
+          <p className="text-on-surface-variant max-w-lg mb-8 relative z-10">
+            Connect your first repository to unlock AI-powered security insights, vulnerability tracking, and compliance reporting.
+          </p>
+          <a 
+            href="/repositories" 
+            className="bg-primary-container text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-container/90 transition-all flex items-center gap-2 relative z-10 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5"
+          >
+            Connect Repository
+          </a>
+        </motion.div>
+      ) : (
+        <>
+          <motion.div 
         className="dashboard-grid mb-8"
         variants={containerVariants}
         initial="hidden"
@@ -440,6 +463,8 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </motion.div>
+        </>
+      )}
     </div>
   );
 }
