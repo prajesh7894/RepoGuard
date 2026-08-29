@@ -161,6 +161,33 @@ export default function Repositories() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
         {isLoading ? (
           <div className="col-span-full flex justify-center py-12 text-on-surface-variant">Loading repositories...</div>
+        ) : repos.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center">
+            <div className="w-20 h-20 rounded-full bg-surface-variant/50 flex items-center justify-center mb-6">
+              <Database className="text-on-surface-variant" size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-on-surface mb-2">No repositories connected</h3>
+            <p className="text-on-surface-variant max-w-md mx-auto mb-8">
+              Connect your first codebase to start scanning for vulnerabilities, exposed secrets, and misconfigurations.
+            </p>
+            <div className="flex gap-4">
+              {!user?.githubLinked && (
+                <button 
+                  onClick={handleSyncGitHub} 
+                  className="flex items-center gap-2 bg-[#2ea043] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#2c974b] transition-colors shadow-lg"
+                >
+                  <div className="i-lucide-github" style={{width: 20, height: 20}}></div>
+                  Sync with GitHub
+                </button>
+              )}
+              <button 
+                onClick={handleConnectNew} 
+                className="flex items-center gap-2 bg-primary-container text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-container/90 transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5"
+              >
+                <Plus size={20} /> Connect Manually
+              </button>
+            </div>
+          </div>
         ) : repos.map(repo => (
         <div key={repo.id} className={`surface-1 rounded-xl overflow-hidden relative group hover:-translate-y-1 transition-transform duration-300 cursor-pointer ${repo.scoreColor === 'red-500' ? 'glow-critical' : repo.scoreColor === 'yellow-500' ? 'glow-medium' : ''}`} onClick={() => setSelectedRepo(repo)}>
           <div className={`absolute left-0 top-0 bottom-0 w-1 bg-${repo.scoreColor} ${repo.isScanning ? 'opacity-50' : ''}`}></div>

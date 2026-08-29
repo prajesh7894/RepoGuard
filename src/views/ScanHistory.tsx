@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Download, ChevronDown, MoreHorizontal, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Filter, Download, ChevronDown, MoreHorizontal, CheckCircle2, XCircle, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ScanHistory() {
@@ -89,8 +89,16 @@ export default function ScanHistory() {
                 </tr>
               ) : scans.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">
-                    No scan history available.
+                  <td colSpan={6} className="p-16 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-surface-variant/50 flex items-center justify-center mb-4">
+                        <History className="text-on-surface-variant opacity-70" size={28} />
+                      </div>
+                      <h4 className="text-lg font-bold text-on-surface mb-2">No scan history yet</h4>
+                      <p className="text-sm text-on-surface-variant max-w-sm mb-6">
+                        Once you connect a repository and run a scan, your security audit history will appear here.
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : scans.map((scan) => {

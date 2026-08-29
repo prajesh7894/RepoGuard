@@ -107,7 +107,7 @@ export default function Login({ setView }: LoginProps) {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary/90 text-black font-semibold rounded-xl py-3 mt-6 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+            className="w-full bg-primary-container hover:bg-primary-container/90 text-white font-bold rounded-xl py-3 mt-6 transition-all flex items-center justify-center gap-2 disabled:opacity-70 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5"
           >
             {loading ? (
               <span className="animate-spin inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
