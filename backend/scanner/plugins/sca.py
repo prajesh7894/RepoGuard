@@ -73,4 +73,46 @@ def sca_scan(repo_path: str):
             except Exception as e:
                 print(f"Error parsing {filepath}: {e}")
                 
+        if 'requirements.txt' in files:
+            filepath = os.path.join(root, 'requirements.txt')
+            rel_path = os.path.relpath(filepath, repo_path).replace('\\', '/')
+            
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        
+                        # Very simple parsing: requests==2.25.1 or requests>=2.25.1
+                        if '==' in line:
+                            pkg, ver = line.split('==', 1)
+                        elif '>=' in line:
+                            pkg, ver = line.split('>=', 1)
+                        else:
+                            continue
+                            
+                        pkg = pkg.strip()
+                        ver = ver.strip().split(',')[0] # handle requests>=2.25.1,<3.0.0
+                        
+                        vulns = get_osv_vulnerabilities(pkg, ver, "PyPI")
+                        
+                        for vuln in vulns:
+                            cve_id = vuln.get("id", "Unknown CVE")
+                            aliases = vuln.get("aliases", [])
+                            if aliases:
+                                cve_id += f" ({aliases[0]})"
+                                
+                            summary = vuln.get("summary", "Vulnerable Dependency")
+                            findings.append({
+                                'file': rel_path,
+                                'line': i + 1,
+                                'match': line[:50],
+                                'type': f'SCA Vulnerability: {cve_id} - {summary}',
+                                'severity': 'HIGH'
+                            })
+            except Exception as e:
+                print(f"Error parsing {filepath}: {e}")
+
     return findings

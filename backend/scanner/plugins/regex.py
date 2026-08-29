@@ -11,12 +11,17 @@ SECRET_PATTERNS = [
     r'AIza[0-9A-Za-z-_]{35}', # Google API Key
     r'SK[0-9a-fA-F]{32}', # Twilio API Key
     r'-----BEGIN (RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----', # Private Keys
-    # Database Connection Strings
+    # More Database Connection Strings
     r'(?i)mongodb(?:\+srv)?:\/\/[^\s]+', # MongoDB URIs
     r'(?i)postgres(ql)?:\/\/[^\s]+', # PostgreSQL URIs
     r'(?i)mysql:\/\/[^\s]+', # MySQL URIs
     r'(?i)rediss?:\/\/[^\s]+', # Redis URIs
     r'(?i)amqps?:\/\/[^\s]+', # RabbitMQ/AMQP URIs
+    
+    # Generic Secrets
+    r'(?i)api_?key\s*[:=]\s*[\'"][a-zA-Z0-9_\-]{16,}[\'"]', # Generic API key assignment
+    r'(?i)secret_?key\s*[:=]\s*[\'"][a-zA-Z0-9_\-]{16,}[\'"]', # Generic Secret key assignment
+    r'(?i)client_?secret\s*[:=]\s*[\'"][a-zA-Z0-9_\-]{16,}[\'"]', # OAuth client secret
 ]
 
 PYTHON_PATTERNS = [
@@ -26,6 +31,21 @@ PYTHON_PATTERNS = [
     (r'\beval\s*\(', 'Arbitrary Code Execution (eval)', 'HIGH'),
     (r'\bexec\s*\(', 'Arbitrary Code Execution (exec)', 'HIGH'),
     (r'(os\.system|subprocess\.(Popen|call|run))\s*\(\s*.*shell\s*=\s*True', 'Command Injection (shell=True)', 'CRITICAL'),
+    (r'hashlib\.md5\s*\(', 'Use of Weak Hash (MD5)', 'MEDIUM'),
+    (r'hashlib\.sha1\s*\(', 'Use of Weak Hash (SHA-1)', 'MEDIUM'),
+    (r'urllib\.urlopen\s*\(', 'Possible SSRF (urllib)', 'MEDIUM'),
+]
+
+JS_PATTERNS = [
+    (r'eval\s*\(', 'Arbitrary Code Execution (eval)', 'HIGH'),
+    (r'setTimeout\s*\(\s*[\'"`]', 'Arbitrary Code Execution (setTimeout with string)', 'HIGH'),
+    (r'setInterval\s*\(\s*[\'"`]', 'Arbitrary Code Execution (setInterval with string)', 'HIGH'),
+    (r'innerHTML\s*=', 'Potential XSS (innerHTML assignment)', 'HIGH'),
+    (r'dangerouslySetInnerHTML', 'Potential XSS (React dangerouslySetInnerHTML)', 'HIGH'),
+    (r'document\.write\s*\(', 'Potential XSS (document.write)', 'HIGH'),
+    (r'require\s*\(\s*\'child_process\'\s*\)\.exec\s*\(', 'Command Injection (child_process.exec)', 'CRITICAL'),
+    (r'console\.(log|debug|info)\s*\(\s*.*(password|secret|token|key)', 'Sensitive Data Logging', 'MEDIUM'),
+    (r'res\.send\s*\(\s*req\.query\.', 'Reflected XSS (Express)', 'HIGH'),
 ]
 
 def regex_scan(repo_path: str, custom_rules: list = None):
@@ -66,6 +86,17 @@ def regex_scan(repo_path: str, custom_rules: list = None):
                         
                         if file.endswith('.py'):
                             for pattern, desc, severity in PYTHON_PATTERNS:
+                                if re.search(pattern, line):
+                                    findings.append({
+                                        'file': os.path.relpath(filepath, repo_path).replace('\\', '/'),
+                                        'line': i + 1,
+                                        'match': line.strip()[:100],
+                                        'type': desc,
+                                        'severity': severity
+                                    })
+                        
+                        if file.endswith(('.js', '.ts', '.jsx', '.tsx')):
+                            for pattern, desc, severity in JS_PATTERNS:
                                 if re.search(pattern, line):
                                     findings.append({
                                         'file': os.path.relpath(filepath, repo_path).replace('\\', '/'),
