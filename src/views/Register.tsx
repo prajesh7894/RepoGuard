@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, UserPlus, ArrowRight, ShieldCheck } from 'lucide-react';
 import { View } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RegisterProps {
   setView: (view: View) => void;
@@ -13,6 +14,7 @@ export default function Register({ setView }: RegisterProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +34,20 @@ export default function Register({ setView }: RegisterProps) {
         throw new Error(data.detail || data.error || 'Failed to register');
       }
 
-      // Registration successful, navigate to login
-      setView('login');
+      // Auto login
+      const loginRes = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const loginData = await loginRes.json();
+      if (loginRes.ok) {
+        login(loginData.token, loginData.user);
+        setView('onboarding');
+      } else {
+        setView('login');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
