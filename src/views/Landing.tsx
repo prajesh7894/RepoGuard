@@ -41,7 +41,7 @@ export default function Landing({ setView }: LandingProps) {
           </div>
           <div className="hero-glow"></div>
           
-          <div className="relative z-10 max-w-7xl mx-auto px-container-padding-desktop w-full grid lg:grid-cols-2 gap-12 items-center py-20">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 w-full grid lg:grid-cols-2 gap-12 items-center py-20">
             <div className="flex flex-col gap-6 animate-fade-in-up">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 w-fit">
                 <Brain className="text-secondary" size={16} />
@@ -144,7 +144,7 @@ export default function Landing({ setView }: LandingProps) {
         </section>
 
         <section className="py-12 border-y border-outline-variant/10 bg-surface-container-lowest/50">
-          <div className="max-w-7xl mx-auto px-container-padding-desktop">
+          <div className="max-w-7xl mx-auto px-4 md:px-8">
             <p className="text-center text-sm font-label-caps text-on-surface-variant uppercase tracking-widest mb-8">Trusted by engineering teams at</p>
             <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
               <div className="text-xl font-display-lg font-bold flex items-center gap-2"><span className="w-6 h-6 rounded-sm bg-current inline-block"></span> Vercel</div>
@@ -156,7 +156,7 @@ export default function Landing({ setView }: LandingProps) {
         </section>
 
         <section className="py-24 bg-background relative">
-          <div className="max-w-7xl mx-auto px-container-padding-desktop">
+          <div className="max-w-7xl mx-auto px-4 md:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16 animate-fade-in-up">
               <h2 className="font-display-lg text-3xl md:text-4xl font-bold mb-4">Comprehensive Security Canvas</h2>
               <p className="text-on-surface-variant text-body-lg">Every commit, every dependency, scrutinized by our AI engine to ensure zero vulnerabilities make it to production.</p>
@@ -223,7 +223,7 @@ export default function Landing({ setView }: LandingProps) {
 
         <section className="py-24 border-t border-outline-variant/10 relative overflow-hidden">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-          <div className="max-w-7xl mx-auto px-container-padding-desktop relative z-10">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-outline-variant/20">
               <div className="p-8">
                 <div className="font-display-lg text-5xl font-bold text-white mb-2 tracking-tight">100M+</div>
@@ -242,7 +242,7 @@ export default function Landing({ setView }: LandingProps) {
         </section>
 
         <section className="py-24 relative">
-          <div className="max-w-4xl mx-auto px-container-padding-desktop text-center">
+          <div className="max-w-4xl mx-auto px-4 md:px-8 text-center">
             <div className="glass-panel p-12 rounded-3xl border border-primary/20 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent"></div>
               <h2 className="relative z-10 font-display-lg text-3xl md:text-4xl font-bold mb-6">Ready to secure your code?</h2>
@@ -265,7 +265,7 @@ export default function Landing({ setView }: LandingProps) {
       </main>
       
       <footer className="border-t border-outline-variant/20 bg-surface-container-lowest pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-container-padding-desktop">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2 lg:col-span-2">
               <div className="flex items-center gap-2 mb-4">

@@ -52,7 +52,7 @@ export default function Compliance() {
   }
 
   return (
-    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-on-surface mb-2">Compliance Center</h1>

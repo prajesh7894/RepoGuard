@@ -70,7 +70,7 @@ export default function Team() {
   };
 
   return (
-    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-5xl mx-auto">
+    <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">

@@ -105,7 +105,7 @@ export default function Repositories() {
   };
 
   return (
-    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Repositories</h2>
@@ -130,7 +130,7 @@ export default function Repositories() {
       </div>
 
       <div className="surface-1 rounded-xl p-4 mb-8 flex flex-wrap gap-4 items-center">
-        <div className="flex-1 min-w-[300px] relative">
+        <div className="flex-1 min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={20} />
           <input 
             className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" 

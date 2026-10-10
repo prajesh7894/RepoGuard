@@ -99,7 +99,7 @@ export default function Header({ onOpenAiAssistant, setView, onOpenSidebar }: He
               )}
           </div>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
           <nav className="hidden xl:flex gap-6">
               <button onClick={() => setView('product')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Product</button>
               <button onClick={() => setView('solutions')} className="text-on-surface-variant hover:text-primary transition-all text-sm font-medium cursor-pointer">Solutions</button>
@@ -108,9 +108,9 @@ export default function Header({ onOpenAiAssistant, setView, onOpenSidebar }: He
           </nav>
           <div className="h-6 w-px bg-outline-variant/30 hidden xl:block"></div>
           <div className="flex items-center gap-2">
-              <button onClick={onOpenAiAssistant} className="bg-primary-container text-white hover:bg-primary-container/90 px-4 py-1.5 rounded-full font-bold transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:shadow-[0_0_15px_rgba(37,99,235,0.6)] flex items-center gap-2 text-sm cursor-pointer hover:-translate-y-0.5">
+              <button onClick={onOpenAiAssistant} className="bg-primary-container text-white hover:bg-primary-container/90 px-3 md:px-4 py-1.5 rounded-full font-bold transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:shadow-[0_0_15px_rgba(37,99,235,0.6)] flex items-center gap-2 text-sm cursor-pointer hover:-translate-y-0.5">
                   <Sparkles size={16} className="fill-white" />
-                  AI Assistant
+                  <span className="hidden sm:inline">AI Assistant</span>
               </button>
               <NotificationCenter />
               <button onClick={logout} title="Log out" className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-red-400 hover:bg-surface-variant/50 transition-colors cursor-pointer">

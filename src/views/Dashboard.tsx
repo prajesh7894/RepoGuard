@@ -106,7 +106,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
+      <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col">
         <div className="mb-8 mt-2 animate-pulse">
           <div className="h-8 bg-surface-variant rounded w-64 mb-2"></div>
           <div className="h-4 bg-surface-variant rounded w-48"></div>
@@ -126,7 +126,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
+    <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col">
       <div className="flex justify-between items-end mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
