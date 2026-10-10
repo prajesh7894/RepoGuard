@@ -85,7 +85,7 @@ export default function Landing({ setView }: LandingProps) {
                 </div>
                 
                 <div className="p-6 flex-grow flex flex-col gap-6">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-surface p-4 rounded-xl border border-outline-variant/10">
                       <div className="text-on-surface-variant text-xs mb-1">Critical Issues</div>
                       <div className="text-error font-display-lg text-2xl font-bold">0</div>

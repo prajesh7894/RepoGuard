@@ -195,7 +195,7 @@ export default function DependencyGraph({ dependencies }: DependencyGraphProps) 
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute right-0 top-0 bottom-0 w-[400px] bg-surface-container/95 backdrop-blur-2xl border-l border-outline-variant/30 p-0 z-40 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col"
+            className="absolute right-0 top-0 bottom-0 w-[400px] max-w-[100vw] bg-surface-container/95 backdrop-blur-2xl border-l border-outline-variant/30 p-0 z-40 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col"
           >
             <div className="p-6 border-b border-outline-variant/30 bg-surface-container-lowest/50 flex justify-between items-center">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">

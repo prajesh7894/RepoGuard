@@ -93,8 +93,8 @@ export default function TeamManager({ token }: { token: string | null }) {
         {loading ? (
           <div className="animate-pulse h-24 bg-surface-variant/30 rounded-lg"></div>
         ) : (
-          <div className="border border-outline-variant/30 rounded-lg overflow-hidden">
-            <table className="w-full text-left text-sm text-on-surface">
+          <div className="border border-outline-variant/30 rounded-lg overflow-x-auto">
+            <table className="w-full text-left text-sm text-on-surface min-w-[500px]">
               <thead className="bg-surface-variant/30 border-b border-outline-variant/30 text-xs font-medium text-on-surface-variant uppercase">
                 <tr>
                   <th className="px-4 py-3">Name</th>

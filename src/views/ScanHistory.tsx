@@ -56,7 +56,7 @@ export default function ScanHistory() {
 
       <div className="glass-panel rounded-xl flex flex-col overflow-hidden shadow-lg border border-outline-variant/30">
         <div className="p-4 border-b border-outline-variant/30 flex flex-wrap gap-4 items-center justify-between bg-surface-container-lowest/30">
-          <div className="relative flex-1 min-w-[250px] max-w-md">
+          <div className="relative flex-1 w-full md:min-w-[250px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={18} />
             <input 
               type="text" 
