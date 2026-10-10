@@ -234,13 +234,19 @@ import base64
 @app.get("/api/auth/github")
 def github_login(request: Request):
     client_id = os.environ.get("GITHUB_CLIENT_ID")
-    referer = request.headers.get("referer")
-    base_url = "http://localhost:5173"
     
-    if referer:
-        parts = referer.split("/")
-        if len(parts) >= 3:
-            base_url = f"{parts[0]}//{parts[2]}"
+    # Try to get the host from Vercel's proxy headers
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_host:
+        base_url = f"https://{forwarded_host}"
+    else:
+        # Fallback to referer or local
+        referer = request.headers.get("referer")
+        base_url = "http://localhost:5173"
+        if referer:
+            parts = referer.split("/")
+            if len(parts) >= 3:
+                base_url = f"{parts[0]}//{parts[2]}"
             
     if not client_id:
         return RedirectResponse(url=f"{base_url}/repositories?code=mock_code")
