@@ -78,10 +78,6 @@ Our dashboard utilizes a cutting-edge dark mode design system, featuring translu
 
 <br />
 
-## 🤝 Contributing
-
-We welcome community contributions! If you find a bug, feel free to open an issue or submit a Pull Request.
-
 ---
 
 <div align="center">
