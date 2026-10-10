@@ -24,13 +24,21 @@ export default function ScanHistory() {
         setIsLoading(false);
       }
     };
+    
     if (token) {
       fetchScans();
+      
+      const handleScanUpdate = () => {
+        fetchScans();
+      };
+      
+      window.addEventListener('scan_update', handleScanUpdate);
+      return () => window.removeEventListener('scan_update', handleScanUpdate);
     }
   }, [token]);
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Scan History</h2>
@@ -69,8 +77,8 @@ export default function ScanHistory() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
+          <table className="w-full text-left border-collapse min-w-[800px] md:min-w-full">
+            <thead className="hidden md:table-header-group">
               <tr className="border-b border-outline-variant/30 bg-surface-container-highest/20 text-xs uppercase font-label-caps tracking-wider text-on-surface-variant">
                 <th className="p-4 font-medium">Scan ID / Date</th>
                 <th className="p-4 font-medium">Repository</th>
@@ -80,16 +88,16 @@ export default function ScanHistory() {
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-sm">
+            <tbody className="divide-y divide-outline-variant/20 text-sm flex flex-col md:table-row-group">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">
+                <tr className="flex flex-col md:table-row p-4 md:p-0">
+                  <td colSpan={6} className="p-4 md:p-8 text-center text-on-surface-variant">
                     Loading scan history...
                   </td>
                 </tr>
               ) : scans.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-16 text-center">
+                <tr className="flex flex-col md:table-row p-4 md:p-0">
+                  <td colSpan={6} className="p-8 md:p-16 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-surface-variant/50 flex items-center justify-center mb-4">
                         <History className="text-on-surface-variant opacity-70" size={28} />
@@ -105,16 +113,24 @@ export default function ScanHistory() {
                 const date = new Date(scan.createdAt);
                 
                 return (
-                <tr key={scan.id} className="hover:bg-surface-variant/20 transition-colors">
-                  <td className="p-4">
-                    <div className="font-code-sm text-primary">SCN-{scan.id.toString().padStart(4, '0')}</div>
-                    <div className="text-xs text-on-surface-variant mt-1">{date.toLocaleString()}</div>
+                <tr key={scan.id} className="hover:bg-surface-variant/20 transition-colors flex flex-col md:table-row p-4 md:p-0 gap-2 md:gap-0">
+                  <td className="px-2 py-1 md:p-4 flex justify-between md:table-cell border-b border-outline-variant/10 md:border-none">
+                    <span className="md:hidden text-xs font-bold text-on-surface-variant uppercase">Scan ID / Date</span>
+                    <div className="text-right md:text-left">
+                      <div className="font-code-sm text-primary">SCN-{scan.id.toString().padStart(4, '0')}</div>
+                      <div className="text-xs text-on-surface-variant mt-1">{date.toLocaleString()}</div>
+                    </div>
                   </td>
-                  <td className="p-4 font-medium text-on-surface">{scan.repository?.name || 'Unknown'}</td>
-                  <td className="p-4">
+                  <td className="px-2 py-1 md:p-4 font-medium text-on-surface flex justify-between md:table-cell items-center">
+                    <span className="md:hidden text-xs font-bold text-on-surface-variant uppercase">Repository</span>
+                    {scan.repository?.name || 'Unknown'}
+                  </td>
+                  <td className="px-2 py-1 md:p-4 flex justify-between md:table-cell items-center">
+                    <span className="md:hidden text-xs font-bold text-on-surface-variant uppercase">Branch</span>
                     <span className="font-code-sm px-2 py-1 bg-surface-variant rounded text-xs text-on-surface-variant">main</span>
                   </td>
-                  <td className="p-4">
+                  <td className="px-2 py-1 md:p-4 flex justify-between md:table-cell items-center">
+                    <span className="md:hidden text-xs font-bold text-on-surface-variant uppercase">Status</span>
                     {scan.status === 'completed' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium border border-success/20">
                         <CheckCircle2 size={14} />
@@ -127,14 +143,15 @@ export default function ScanHistory() {
                       </span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
+                  <td className="px-2 py-1 md:p-4 flex justify-between md:table-cell items-center">
+                    <span className="md:hidden text-xs font-bold text-on-surface-variant uppercase">Findings</span>
+                    <div className="flex gap-2 justify-end md:justify-start">
                       {scan.critical > 0 && <span className="text-xs font-bold text-critical bg-critical/10 px-2 py-0.5 rounded border border-critical/20">{scan.critical} C</span>}
                       {scan.high > 0 && <span className="text-xs font-bold text-warning bg-warning/10 px-2 py-0.5 rounded border border-warning/20">{scan.high} H</span>}
                       {scan.critical === 0 && scan.high === 0 && <span className="text-xs text-on-surface-variant">-</span>}
                     </div>
                   </td>
-                  <td className="p-4 text-right flex justify-end gap-1">
+                  <td className="px-2 py-3 md:p-4 text-right flex justify-end gap-1 mt-2 md:mt-0 border-t border-outline-variant/10 md:border-none">
                     <a 
                       href={`/api/scans/${scan.id}/export/json`} 
                       download

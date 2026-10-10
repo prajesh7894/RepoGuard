@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Info, ShieldAlert, CheckCircle2, AlertTriangle, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -57,11 +57,11 @@ export default function NotificationCenter() {
 
   const getIcon = (type: string) => {
     switch(type) {
-      case 'success': return <CheckCircle2 className="text-success" size={20} />;
-      case 'critical': return <ShieldAlert className="text-critical" size={20} />;
-      case 'warning': return <AlertTriangle className="text-warning" size={20} />;
-      case 'system': return <Settings className="text-primary" size={20} />;
-      default: return <Info className="text-primary" size={20} />;
+      case 'success': return <div className="p-1.5 rounded-full bg-success/10 border border-success/20 shadow-inner"><CheckCircle2 className="text-success" size={16} /></div>;
+      case 'warning': return <div className="p-1.5 rounded-full bg-warning/10 border border-warning/20 shadow-inner"><AlertTriangle className="text-warning" size={16} /></div>;
+      case 'critical': return <div className="p-1.5 rounded-full bg-critical/10 border border-critical/20 shadow-inner"><ShieldAlert className="text-critical" size={16} /></div>;
+      case 'system': return <div className="p-1.5 rounded-full bg-primary/10 border border-primary/20 shadow-inner"><Settings className="text-primary" size={16} /></div>;
+      default: return <div className="p-1.5 rounded-full bg-info/10 border border-info/20 shadow-inner"><Info className="text-info" size={16} /></div>;
     }
   };
 

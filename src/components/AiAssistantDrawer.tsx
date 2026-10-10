@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Send, Bot, User, Sparkles } from 'lucide-react';
+import TypewriterText from './TypewriterText';
 
 export default function AiAssistantDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [messages, setMessages] = useState<{role: 'user' | 'assistant', text: string}[]>([
@@ -62,16 +63,23 @@ export default function AiAssistantDrawer({ isOpen, onClose }: { isOpen: boolean
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-primary text-on-primary' : 'bg-surface-variant text-primary'}`}>
-                {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+          {messages.map((msg, idx) => {
+            const isLatestAssistant = idx === messages.length - 1 && msg.role === 'assistant';
+            return (
+              <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-primary text-on-primary shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'bg-surface-variant text-primary'}`}>
+                  {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                </div>
+                <div className={`p-3 rounded-2xl max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-primary text-on-primary rounded-tr-sm shadow-[0_4px_15px_rgba(37,99,235,0.2)]' : 'bg-surface-variant text-on-surface rounded-tl-sm border border-outline-variant/30 leading-relaxed'}`}>
+                  {isLatestAssistant && idx !== 0 ? (
+                    <TypewriterText text={msg.text} delay={15} />
+                  ) : (
+                    msg.text
+                  )}
+                </div>
               </div>
-              <div className={`p-3 rounded-2xl max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-primary text-on-primary rounded-tr-sm' : 'bg-surface-variant text-on-surface rounded-tl-sm'}`}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {isTyping && (
             <div className="flex gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-surface-variant text-primary">

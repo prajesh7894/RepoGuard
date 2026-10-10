@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert, Search, Filter, Key, CheckCircle2, AlertTriangle, ExternalLink, MoreVertical, Bot } from 'lucide-react';
+import { ShieldAlert, Search, Filter, Key, CheckCircle2, AlertTriangle, ExternalLink, MoreVertical, Bot, Eye, EyeOff, RefreshCw, GitPullRequest } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { AIChatPanel } from '../components/AIChatPanel';
 
@@ -9,6 +9,37 @@ export default function SecretScanner() {
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatFinding, setChatFinding] = useState<any>(null);
+  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
+  
+  const toggleVisibility = (id: string) => {
+    setVisibleSecrets(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleAutoRotate = (id: string) => {
+    setRotatingId(id);
+    // Simulate auto-rotation API call
+    setTimeout(() => {
+      setRotatingId(null);
+      
+      // Update local state to mark as rotated
+      setSecrets(prev => prev.map(s => {
+        if (s.id === id) {
+          return { ...s, status: 'rotated' };
+        }
+        return s;
+      }));
+      
+      // Dispatch toast
+      window.dispatchEvent(new CustomEvent('add_toast', {
+        detail: {
+          title: 'Secret Auto-Rotated',
+          message: 'The compromised key was revoked and a Pull Request with the new key was created.',
+          type: 'success'
+        }
+      }));
+    }, 2500);
+  };
 
   useEffect(() => {
     const fetchScans = async () => {
@@ -62,7 +93,7 @@ export default function SecretScanner() {
   const criticalCount = secrets.filter(s => s.severity === 'critical').length;
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">
@@ -141,12 +172,27 @@ export default function SecretScanner() {
               ) : secrets.map((secret) => (
                 <tr key={secret.id} className="hover:bg-surface-variant/20 transition-colors">
                   <td className="p-4">
-                    <div className="font-medium text-on-surface mb-1">{secret.type}</div>
-                    <div className="text-xs text-on-surface-variant flex items-center gap-2">
+                    <div className="font-medium text-on-surface mb-1 flex items-center justify-between">
+                      {secret.type}
+                    </div>
+                    <div className="text-xs text-on-surface-variant flex items-center gap-2 mb-2">
                        <span className="font-code-sm text-primary">{secret.id}</span>
                        <span>•</span>
                        <span>Found {secret.date}</span>
                     </div>
+                    {secret.match && (
+                      <div className="flex items-center gap-2 bg-surface-container-lowest/50 border border-outline-variant/30 rounded p-1.5 w-fit">
+                        <span className="font-code-sm text-xs text-on-surface-variant/80 tracking-wider">
+                          {visibleSecrets[secret.id] ? secret.match : '••••••••••••••••••••'}
+                        </span>
+                        <button 
+                          onClick={() => toggleVisibility(secret.id)}
+                          className="text-outline hover:text-primary transition-colors cursor-pointer"
+                        >
+                          {visibleSecrets[secret.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="p-4">
                     <div className="font-medium text-on-surface mb-1">{secret.repo}</div>
@@ -170,6 +216,11 @@ export default function SecretScanner() {
                           <CheckCircle2 size={14} /> Resolved
                        </span>
                     )}
+                    {secret.status === 'rotated' && (
+                       <span className="inline-flex items-center gap-1.5 text-primary font-medium text-xs">
+                          <GitPullRequest size={14} /> PR Opened
+                       </span>
+                    )}
                     {secret.status === 'ignored' && (
                        <span className="inline-flex items-center gap-1.5 text-on-surface-variant font-medium text-xs">
                           <AlertTriangle size={14} className="opacity-50" /> Ignored
@@ -187,8 +238,12 @@ export default function SecretScanner() {
                            <Bot size={14} /> Ask AI
                         </button>
                         {secret.status === 'open' && (
-                           <button className="px-3 py-1.5 bg-surface-variant hover:bg-surface-variant/80 text-on-surface text-xs font-medium rounded transition-colors cursor-pointer border border-outline-variant/30">
-                              Revoke
+                           <button 
+                             onClick={() => handleAutoRotate(secret.id)}
+                             disabled={rotatingId === secret.id}
+                             className="px-3 py-1.5 bg-primary-container hover:bg-primary-container/90 text-white text-xs font-medium rounded transition-colors cursor-pointer flex items-center gap-1 shadow-md shadow-primary-container/20 disabled:opacity-70">
+                              {rotatingId === secret.id ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                              {rotatingId === secret.id ? 'Rotating...' : 'Auto-Rotate'}
                            </button>
                         )}
                         <button className="p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded hover:bg-surface-variant">

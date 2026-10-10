@@ -1,4 +1,4 @@
-import { Search, Sparkles, LogOut, FolderCode, History } from 'lucide-react';
+import { Search, Sparkles, LogOut, FolderCode, History, Menu, X } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import { useAuth } from '../contexts/AuthContext';
 import { View } from '../types';
@@ -7,9 +7,10 @@ import { useState, useEffect } from 'react';
 interface HeaderProps {
   onOpenAiAssistant: () => void;
   setView: (view: View) => void;
+  onOpenSidebar?: () => void;
 }
 
-export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
+export default function Header({ onOpenAiAssistant, setView, onOpenSidebar }: HeaderProps) {
   const { user, token, logout } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,9 +45,17 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
   }, [searchQuery, token]);
   
   return (
-    <div className="fixed top-4 right-4 left-4 md:left-[272px] z-40">
-      <header className="glass-panel text-primary font-body-sm text-body-sm h-14 rounded-full flex items-center justify-between px-6">
-        <div className="flex items-center gap-6">
+    <>
+    <div className="sticky top-4 mx-4 md:mx-6 z-40 mb-6">
+      <header className="glass-panel text-primary font-body-sm text-body-sm h-14 rounded-full flex items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-4 md:gap-6">
+          <button 
+            className="md:hidden text-on-surface hover:text-primary transition-colors cursor-pointer"
+            onClick={() => onOpenSidebar && onOpenSidebar()}
+          >
+            <Menu size={24} />
+          </button>
+          
           <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
               <input 
@@ -99,8 +108,8 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
           </nav>
           <div className="h-6 w-px bg-outline-variant/30 hidden xl:block"></div>
           <div className="flex items-center gap-2">
-              <button onClick={onOpenAiAssistant} className="bg-primary-container/20 text-primary hover:bg-primary-container/30 px-3 py-1.5 rounded-full font-medium transition-colors border border-primary/20 flex items-center gap-2 text-sm cursor-pointer">
-                  <Sparkles size={16} />
+              <button onClick={onOpenAiAssistant} className="bg-primary-container text-white hover:bg-primary-container/90 px-4 py-1.5 rounded-full font-bold transition-all shadow-[0_0_10px_rgba(37,99,235,0.4)] hover:shadow-[0_0_15px_rgba(37,99,235,0.6)] flex items-center gap-2 text-sm cursor-pointer hover:-translate-y-0.5">
+                  <Sparkles size={16} className="fill-white" />
                   AI Assistant
               </button>
               <NotificationCenter />
@@ -114,5 +123,6 @@ export default function Header({ onOpenAiAssistant, setView }: HeaderProps) {
         </div>
       </header>
     </div>
+    </>
   );
 }

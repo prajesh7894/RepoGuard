@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { BarChart, Download, FileText, Calendar, Filter } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { useAuth } from '../contexts/AuthContext';
+import ReportBuilderModal from '../components/ReportBuilderModal';
 
 export default function Reports() {
   const { token } = useAuth();
   const [analytics, setAnalytics] = useState<any>(null);
   const [reports, setReports] = useState<any[]>([]);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -46,7 +48,7 @@ export default function Reports() {
 
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-6xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">
@@ -58,7 +60,7 @@ export default function Reports() {
         <button 
           onClick={() => {
             if (reports.length > 0) {
-              window.location.href = `/api/scans/${reports[0].scan.id}/export/pdf`;
+              setIsBuilderOpen(true);
             } else {
               alert("No scans available to generate a report.");
             }
@@ -160,6 +162,13 @@ export default function Reports() {
           </table>
         </div>
       </div>
+      
+      {isBuilderOpen && reports.length > 0 && (
+        <ReportBuilderModal
+          scanId={reports[0].scan.id}
+          onClose={() => setIsBuilderOpen(false)}
+        />
+      )}
     </div>
   );
 }

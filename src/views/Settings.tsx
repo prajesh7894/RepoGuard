@@ -58,7 +58,7 @@ export default function Settings() {
   ];
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">
@@ -84,13 +84,19 @@ export default function Settings() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left group ${
                   activeTab === tab.id
-                    ? 'bg-primary/10 text-primary border-l-4 border-primary'
-                    : 'text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface border-l-4 border-transparent'
+                    ? 'bg-primary/5 text-primary border border-primary/20 shadow-sm'
+                    : 'text-on-surface-variant hover:bg-surface-variant/30 hover:text-on-surface border border-transparent'
                 }`}
               >
-                <tab.icon size={18} />
+                <div className={`p-1.5 rounded-lg transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]'
+                    : 'bg-surface-variant group-hover:bg-surface-variant-hover text-on-surface-variant'
+                }`}>
+                  <tab.icon size={16} />
+                </div>
                 {tab.label}
               </button>
             ))}

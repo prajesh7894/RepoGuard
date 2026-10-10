@@ -67,13 +67,17 @@ export default function CustomRulesManager({ token }: { token: string | null }) 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h4 className="font-semibold text-on-surface flex items-center gap-2">
-          <ShieldAlert size={18} /> Regex Patterns
-        </h4>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="px-4 py-2 bg-primary-container text-white text-sm font-medium rounded hover:bg-primary-container/90 transition-colors flex items-center gap-2"
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-semibold text-on-surface flex items-center gap-2">
+            Custom Security Rules
+            <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded ml-2">Admin Only</span>
+          </h4>
+          <p className="text-sm text-on-surface-variant mt-1">Define custom regex patterns to catch domain-specific secrets or bad practices.</p>
+        </div>
+        <button 
+          onClick={() => setIsAdding(true)}
+          className="px-4 py-2 bg-primary-container text-white text-sm font-bold rounded-lg hover:bg-primary-container/90 transition-all flex items-center gap-2 shadow-lg"
         >
           <Plus size={16} /> Add Rule
         </button>

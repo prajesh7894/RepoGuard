@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Brain, Code, Play, ShieldAlert, CheckCircle2, ChevronRight, Zap, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import TypewriterText from '../components/TypewriterText';
 
 export default function AiSecurityReview() {
   const [code, setCode] = useState(`app.post('/api/users', (req, res) => {
@@ -19,7 +20,25 @@ export default function AiSecurityReview() {
 });`);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any | null>(null);
+  const [fixingId, setFixingId] = useState<number | null>(null);
+  const [fixedId, setFixedId] = useState<number | null>(null);
   const { token } = useAuth();
+
+  const handleAutoFix = (idx: number) => {
+    setFixingId(idx);
+    setTimeout(() => {
+      setFixingId(null);
+      setFixedId(idx);
+      // Dispatch toast
+      window.dispatchEvent(new CustomEvent('add_toast', {
+        detail: {
+          title: 'PR Created Successfully',
+          message: 'AI Auto-Remediation has opened a Pull Request with the fix on GitHub.',
+          type: 'success'
+        }
+      }));
+    }, 2000);
+  };
 
   const analyzeCode = async () => {
     setIsAnalyzing(true);
@@ -50,7 +69,7 @@ export default function AiSecurityReview() {
   };
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">
@@ -128,25 +147,35 @@ export default function AiSecurityReview() {
                 </div>
                 
                 <p className="text-sm text-on-surface mb-6 leading-relaxed">
-                  {vuln.description}
+                  <TypewriterText text={vuln.description} delay={10} />
                 </p>
 
                 <div className="mb-6">
                   <h4 className="font-label-caps text-xs uppercase text-on-surface-variant mb-2">Recommendation</h4>
                   <div className="flex items-start gap-2 bg-surface-variant/30 p-3 rounded-lg border border-outline-variant/20">
                     <CheckCircle2 size={16} className="text-success mt-0.5 shrink-0" />
-                    <p className="text-sm text-on-surface">{vuln.recommendation}</p>
+                    <p className="text-sm text-on-surface">
+                      <TypewriterText text={vuln.recommendation} delay={15} />
+                    </p>
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-label-caps text-xs uppercase text-on-surface-variant mb-2 flex items-center justify-between">
                     Suggested Fix
-                    <button className="text-primary hover:underline lowercase font-body-sm normal-case flex items-center gap-1 cursor-pointer">
-                      Apply Fix <ChevronRight size={14} />
-                    </button>
+                    {fixedId === idx ? (
+                      <span className="text-success text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14} /> PR Created</span>
+                    ) : (
+                      <button 
+                        onClick={() => handleAutoFix(idx)}
+                        disabled={fixingId === idx}
+                        className="text-white bg-primary-container px-3 py-1 rounded text-xs font-bold hover:bg-primary-container/90 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                      >
+                        {fixingId === idx ? <><RefreshCw size={12} className="animate-spin" /> Generating PR...</> : <><Code size={12} /> Auto-Generate PR</>}
+                      </button>
+                    )}
                   </h4>
-                  <div className="rounded-lg overflow-hidden border border-success/30 bg-success/5 font-code-sm text-xs">
+                  <div className="rounded-lg overflow-hidden border border-success/30 bg-success/5 font-code-sm text-xs relative">
                     <div className="p-4 overflow-x-auto text-on-surface whitespace-pre">
                       {vuln.fixedCode}
                     </div>

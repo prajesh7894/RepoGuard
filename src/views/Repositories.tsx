@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Eye, FileCode, Gauge, ChevronDown, Blocks, Clock, MoreVertical, Bug, Key, RefreshCw, Database } from 'lucide-react';
+import { Plus, Search, Eye, FileCode, Gauge, ChevronDown, Blocks, Clock, MoreVertical, Bug, Key, RefreshCw, Database, FolderGit2 } from 'lucide-react';
 import RepoDetailsDrawer from '../components/RepoDetailsDrawer';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -55,14 +55,13 @@ export default function Repositories() {
     }
   }, [token]);
 
-  // Poll for updates if any repo is currently scanning
   useEffect(() => {
-    let interval: any;
-    if (repos.some(r => r.isScanning)) {
-      interval = setInterval(fetchRepos, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [repos]);
+    const handleScanUpdate = () => {
+      fetchRepos();
+    };
+    window.addEventListener('scan_update', handleScanUpdate);
+    return () => window.removeEventListener('scan_update', handleScanUpdate);
+  }, [token]);
 
   const triggerScan = async (repoId: number) => {
     try {
@@ -106,7 +105,7 @@ export default function Repositories() {
   };
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Repositories</h2>
@@ -194,8 +193,8 @@ export default function Repositories() {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-surface-container-lowest/50 border border-outline-variant/30 flex items-center justify-center">
-                  <Blocks className="text-on-surface" size={20} />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <FolderGit2 className="text-primary" size={20} />
                 </div>
                 <div>
                   <h3 className="font-title-md text-title-md text-on-surface font-semibold group-hover:text-primary transition-colors">{repo.name}</h3>

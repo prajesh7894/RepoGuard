@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, ShieldAlert, Network, CheckCircle2, AlertTriangle, ArrowUpRight, MoreVertical, ArrowUpCircle } from 'lucide-react';
+import { Search, Filter, ShieldAlert, Network, CheckCircle2, AlertTriangle, ArrowUpRight, MoreVertical, ArrowUpCircle, List, GitMerge } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import DependencyGraph from '../components/DependencyGraph';
 
 export default function DependencyScanner() {
   const { token } = useAuth();
   const [dependencies, setDependencies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fixing, setFixing] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
 
   const handleFixPR = async (depId: string, finding: any, repoUrl: string) => {
     setFixing(prev => ({ ...prev, [depId]: true }));
@@ -92,7 +94,7 @@ export default function DependencyScanner() {
   const criticalCount = dependencies.filter(d => d.severity === 'critical').length;
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold flex items-center gap-3">
@@ -100,6 +102,20 @@ export default function DependencyScanner() {
             Dependency Scanner (SCA)
           </h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">Manage known vulnerabilities (CVEs) in open-source libraries and packages.</p>
+        </div>
+        <div className="flex items-center gap-1 bg-surface-container-highest p-1 rounded-lg border border-outline-variant/30">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}
+          >
+            <List size={16} /> List
+          </button>
+          <button 
+            onClick={() => setViewMode('graph')}
+            className={`px-3 py-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${viewMode === 'graph' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}
+          >
+            <GitMerge size={16} /> Graph
+          </button>
         </div>
       </div>
 
@@ -142,23 +158,26 @@ export default function DependencyScanner() {
         </div>
       </div>
 
-      <div className="glass-panel rounded-xl flex flex-col overflow-hidden shadow-lg border border-outline-variant/30 flex-1">
-        <div className="p-4 border-b border-outline-variant/30 flex flex-wrap gap-4 items-center justify-between bg-surface-container-lowest/30">
-          <div className="relative flex-1 min-w-[250px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search by package, CVE, or repository..." 
-              className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-surface"
-            />
+      {viewMode === 'graph' ? (
+        <DependencyGraph dependencies={dependencies} />
+      ) : (
+        <div className="glass-panel rounded-xl flex flex-col overflow-hidden shadow-lg border border-outline-variant/30 flex-1">
+          <div className="p-4 border-b border-outline-variant/30 flex flex-wrap gap-4 items-center justify-between bg-surface-container-lowest/30">
+            <div className="relative flex-1 min-w-[250px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search by package, CVE, or repository..." 
+                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-surface"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-highest border border-outline-variant/30 text-sm text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+                <Filter size={16} />
+                Severity: All
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-highest border border-outline-variant/30 text-sm text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
-              <Filter size={16} />
-              Severity: All
-            </button>
-          </div>
-        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[900px]">
@@ -244,6 +263,7 @@ export default function DependencyScanner() {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }

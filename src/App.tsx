@@ -20,8 +20,11 @@ import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Help from './views/Help';
 import Reports from './views/Reports';
+import Compliance from './views/Compliance';
+import AuditLogs from './views/AuditLogs';
 import Integrations from './views/Integrations';
 import Team from './views/Team';
+import ToastContainer from './components/ToastContainer';
 
 import Product from './views/Product';
 import Solutions from './views/Solutions';
@@ -37,7 +40,7 @@ function MainApp() {
       'landing', 'login', 'register', 'onboarding', 'dashboard', 'repositories', 
       'new_scan', 'scan_history', 'ai_security_review', 'secret_scanner', 
       'dependency_scanner', 'notifications', 'settings', 'help', 
-      'reports', 'integrations', 'team', 'product', 'solutions', 'pricing', 'docs'
+      'reports', 'compliance', 'audit_logs', 'integrations', 'team', 'product', 'solutions', 'pricing', 'docs'
     ];
     if (validViews.includes(path as View)) return path as View;
     return 'landing';
@@ -45,6 +48,7 @@ function MainApp() {
 
   const [currentView, setCurrentView] = useState<View>(getInitialView());
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { user, isLoading } = useAuth();
 
@@ -62,7 +66,35 @@ function MainApp() {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }, 10);
     }
+    // Close sidebar on navigation on mobile
+    setIsSidebarOpen(false);
   }, [currentView]);
+
+  // WebSocket Connection
+  useEffect(() => {
+    if (!user) return;
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProto}//${window.location.host}/ws`;
+    
+    // Fallback if running via vite dev server proxy, ws might need correct port
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'SCAN_COMPLETED' || data.type === 'SCAN_STARTED') {
+          // Dispatch custom event for views to listen to
+          window.dispatchEvent(new CustomEvent('scan_update', { detail: data }));
+        }
+      } catch (err) {
+        console.error('Failed to parse WS message', err);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [user]);
 
   // Route Guard
   useEffect(() => {
@@ -77,13 +109,13 @@ function MainApp() {
 
   return (
     <div className="h-screen overflow-hidden bg-background flex">
-      {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Sidebar currentView={currentView} setView={setCurrentView} />}
+      {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Sidebar currentView={currentView} setView={setCurrentView} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
       
       <div 
         ref={scrollContainerRef}
         className={`w-full h-full relative overflow-y-auto overflow-x-hidden ${!['landing', 'login', 'register', 'onboarding'].includes(currentView) ? 'md:pl-[272px]' : ''}`}
       >
-        {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Header onOpenAiAssistant={() => setIsAiAssistantOpen(true)} setView={setCurrentView} />}
+        {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Header onOpenAiAssistant={() => setIsAiAssistantOpen(true)} setView={setCurrentView} onOpenSidebar={() => setIsSidebarOpen(true)} />}
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -106,6 +138,8 @@ function MainApp() {
             {currentView === 'secret_scanner' && <SecretScanner />}
             {currentView === 'dependency_scanner' && <DependencyScanner />}
             {currentView === 'notifications' && <Notifications />}
+            {currentView === 'compliance' && <Compliance />}
+            {currentView === 'audit_logs' && <AuditLogs />}
             {currentView === 'settings' && <Settings />}
             {currentView === 'help' && <Help />}
             {currentView === 'reports' && <Reports />}
@@ -120,6 +154,7 @@ function MainApp() {
       </div>
 
       <AiAssistantDrawer isOpen={isAiAssistantOpen} onClose={() => setIsAiAssistantOpen(false)} />
+      <ToastContainer />
     </div>
   );
 }

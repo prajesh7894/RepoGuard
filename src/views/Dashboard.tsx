@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export default function Dashboard() {
   const [repos, setRepos] = useState<any[]>([]);
@@ -53,6 +53,13 @@ export default function Dashboard() {
     if (token) {
       fetchData();
     }
+    
+    const handleScanUpdate = () => {
+      fetchData(false); // background refresh
+    };
+    
+    window.addEventListener('scan_update', handleScanUpdate);
+    return () => window.removeEventListener('scan_update', handleScanUpdate);
   }, [token, fetchData]);
 
   const totalCritical = analytics?.severity?.critical || 0;
@@ -99,7 +106,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
+      <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
         <div className="mb-8 mt-2 animate-pulse">
           <div className="h-8 bg-surface-variant rounded w-64 mb-2"></div>
           <div className="h-4 bg-surface-variant rounded w-48"></div>
@@ -119,7 +126,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full h-full flex flex-col">
       <div className="flex justify-between items-end mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
@@ -284,29 +291,29 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 mt-4 mb-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dynamicVulnerabilityData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+              <AreaChart data={dynamicVulnerabilityData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
                 <defs>
-                  <linearGradient id="colorCrit" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="5%" stopColor="var(--color-critical)" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="var(--color-critical)" stopOpacity={1}/>
+                  <linearGradient id="colorCrit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-critical)" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="var(--color-critical)" stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="colorWarn" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="5%" stopColor="var(--color-warning)" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="var(--color-warning)" stopOpacity={1}/>
+                  <linearGradient id="colorWarn" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-warning)" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="var(--color-warning)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.3} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" strokeOpacity={0.2} vertical={false} />
                 <XAxis dataKey="name" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} axisLine={false} />
                 <RechartsTooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', borderColor: 'var(--color-outline-variant)', borderRadius: '8px', color: 'var(--color-on-surface)' }}
+                  contentStyle={{ backgroundColor: 'var(--color-surface-container-highest)', borderColor: 'var(--color-outline-variant)', borderRadius: '12px', color: 'var(--color-on-surface)', boxShadow: '0 8px 30px rgba(0,0,0,0.3)' }}
                   itemStyle={{ color: 'var(--color-on-surface)' }}
-                  labelStyle={{ fontWeight: 'bold', color: 'var(--color-on-surface)', marginBottom: '4px' }}
+                  labelStyle={{ fontWeight: 'bold', color: 'var(--color-on-surface)', marginBottom: '8px' }}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" name="Critical Issues" dataKey="critical" stroke="url(#colorCrit)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-critical)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" name="High & Secrets" dataKey="highAndSecrets" stroke="url(#colorWarn)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-warning)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-              </LineChart>
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Area type="monotone" name="Critical Issues" dataKey="critical" stroke="var(--color-critical)" strokeWidth={3} fillOpacity={1} fill="url(#colorCrit)" activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-critical)' }} />
+                <Area type="monotone" name="High & Secrets" dataKey="highAndSecrets" stroke="var(--color-warning)" strokeWidth={3} fillOpacity={1} fill="url(#colorWarn)" activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-warning)' }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>

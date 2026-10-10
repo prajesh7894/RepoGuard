@@ -1,38 +1,57 @@
 import {
   LayoutDashboard,
-  Package,
-  FileSearch,
-  History,
-  Unlock,
-  Network,
-  Brain,
-  BarChart,
-  Puzzle,
+  FolderGit2,
+  ScanSearch,
+  Activity,
+  Key,
+  Workflow,
+  Sparkles,
+  AreaChart,
+  Blocks,
   Users,
   Bell,
   Settings,
   HelpCircle,
-  Shield
+  ShieldCheck,
+  Shield,
+  Zap,
+  X,
+  ClipboardList
 } from 'lucide-react';
 import { View } from '../types';
 
 interface SidebarProps {
   currentView: View;
   setView: (view: View) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ currentView, setView }: SidebarProps) {
+export default function Sidebar({ currentView, setView, isOpen, onClose }: SidebarProps) {
   return (
-    <aside className="w-[240px] fixed left-4 top-4 bottom-4 rounded-3xl glass-panel flex flex-col gap-4 py-6 z-50 hidden md:flex">
-      <div className="px-6 mb-6 flex items-center gap-3" onClick={() => setView('landing')} style={{cursor: 'pointer'}}>
-        <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
-            <Shield className="text-white" size={24} />
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+      <aside className={`w-[260px] fixed left-4 top-4 bottom-4 rounded-3xl glass-panel flex flex-col gap-4 py-6 z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-[120%]'} md:translate-x-0`}>
+        <div className="px-6 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('landing')}>
+            <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shadow-lg shadow-primary-container/20">
+                <ShieldCheck className="text-white" size={24} />
+            </div>
+            <div>
+              <h1 className="font-display-lg text-title-md font-bold text-primary truncate tracking-tight">RepoGuard</h1>
+              <p className="font-body-sm text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Enterprise Security</p>
+            </div>
+          </div>
+          <button className="md:hidden text-on-surface hover:text-primary" onClick={onClose}>
+            <X size={24} />
+          </button>
         </div>
-        <div>
-          <h1 className="font-display-lg text-title-md font-bold text-primary truncate">RepoGuard</h1>
-          <p className="font-body-sm text-xs text-on-surface-variant">Enterprise DevSecOps</p>
-        </div>
-      </div>
       <nav className="flex-1 overflow-y-auto px-4">
         <ul className="space-y-1">
           <li>
@@ -57,7 +76,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Package size={20} />
+              <FolderGit2 size={20} />
               <span className="text-sm text-left truncate">Repositories</span>
             </button>
           </li>
@@ -70,7 +89,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <FileSearch size={20} />
+              <ScanSearch size={20} />
               <span className="text-sm text-left truncate">New Scan</span>
             </button>
           </li>
@@ -83,7 +102,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <History size={20} />
+              <Activity size={20} />
               <span className="text-sm text-left truncate">Scan History</span>
             </button>
           </li>
@@ -97,7 +116,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Unlock size={20} />
+              <Key size={20} />
               <span className="text-sm text-left truncate">Secret Scanner</span>
             </button>
           </li>
@@ -110,7 +129,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Network size={20} />
+              <Workflow size={20} />
               <span className="text-sm text-left truncate">Dependency Scanner</span>
             </button>
           </li>
@@ -123,11 +142,37 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Brain size={20} />
+              <Sparkles size={20} className={currentView === 'ai_security_review' ? "text-secondary" : ""} />
               <span className="text-sm text-left truncate">AI Security Review</span>
             </button>
           </li>
+          <li>
+            <button
+              onClick={() => setView('compliance')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
+                currentView === 'compliance'
+                  ? 'text-primary font-bold border-r-4 border-primary bg-primary/10'
+                  : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
+              }`}
+            >
+              <Shield size={20} />
+              <span className="text-sm text-left truncate">Compliance</span>
+            </button>
+          </li>
           <li className="pt-4 pb-1 px-4 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">System</li>
+          <li>
+            <button
+              onClick={() => setView('audit_logs')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
+                currentView === 'audit_logs'
+                  ? 'text-primary font-bold border-r-4 border-primary bg-primary/10'
+                  : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
+              }`}
+            >
+              <ClipboardList size={20} />
+              <span className="text-sm text-left truncate">Audit Logs</span>
+            </button>
+          </li>
           <li>
             <button
               onClick={() => setView('reports')}
@@ -137,7 +182,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <BarChart size={20} />
+              <AreaChart size={20} />
               <span className="text-sm text-left truncate">Reports</span>
             </button>
           </li>
@@ -150,7 +195,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Puzzle size={20} />
+              <Blocks size={20} />
               <span className="text-sm text-left truncate">Integrations</span>
             </button>
           </li>
@@ -203,12 +248,8 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
           <HelpCircle size={20} />
           <span className="text-sm text-left">Help</span>
         </button>
-        <div className="mt-4 px-2">
-          <button className="w-full bg-primary-container text-white py-2 rounded-lg font-medium text-sm hover:bg-primary-container/90 transition-colors shadow-lg shadow-primary-container/20">
-            Upgrade to Pro
-          </button>
-        </div>
       </div>
     </aside>
+    </>
   );
 }

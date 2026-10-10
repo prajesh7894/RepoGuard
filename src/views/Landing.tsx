@@ -64,10 +64,6 @@ export default function Landing({ setView }: LandingProps) {
                 >
                   Start Free Trial
                 </button>
-                <button className="glass-panel text-on-surface px-8 py-3.5 rounded-full font-body-lg text-body-lg text-center hover:bg-white/5 transition-all flex items-center justify-center gap-2 border border-outline-variant/30 cursor-pointer">
-                  <PlayCircle size={20} />
-                  View Demo
-                </button>
               </div>
               
               <div className="flex items-center gap-4 mt-8 text-on-surface-variant font-body-sm text-sm">

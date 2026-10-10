@@ -127,7 +127,7 @@ export default function NewScan({ setView }: { setView?: (view: View) => void })
   const progressWidth = currentStep === 1 ? '15%' : currentStep === 2 ? '50%' : '100%';
 
   return (
-    <div className="pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full flex flex-col min-h-screen">
+    <div className="py-6 px-container-padding-mobile md:px-container-padding-desktop w-full flex flex-col min-h-screen">
       <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col">
         
         <div className="mb-8 mt-2">

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 import uuid
-from typing import List
+from typing import List, Dict, Optional
 import json
 import asyncio
 from sse_starlette.sse import EventSourceResponse
@@ -27,6 +27,26 @@ from webhooks import router as webhooks_router
 from auth import get_current_user
 
 models.Base.metadata.create_all(bind=engine)
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+manager = ConnectionManager()
 
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -777,6 +797,35 @@ def export_scan_pdf(scan_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Scan not found")
         
     pdf = PDF()
+    
+    # ---------------- COVER PAGE ----------------
+    pdf.add_page()
+    pdf.set_y(60)
+    pdf.set_font("helvetica", "B", 32)
+    pdf.set_text_color(37, 99, 235) # primary blue
+    pdf.cell(0, 20, "RepoGuard", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("helvetica", "", 18)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 10, "Enterprise Security Audit Report", align="C", new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_y(120)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_text_color(51, 65, 85)
+    repo_name = scan.repository.name if scan.repository else "Unknown"
+    scan_date = scan.createdAt.strftime("%B %d, %Y - %H:%M:%S UTC") if scan.createdAt else "Unknown"
+    overall_score = scan.repository.score if scan.repository else "N/A"
+    
+    pdf.cell(0, 8, f"Target Repository: {repo_name}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("helvetica", "", 12)
+    pdf.cell(0, 8, f"Scan ID: SCN-{str(scan.id).zfill(4)}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, f"Date: {scan_date}", align="C", new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_y(250)
+    pdf.set_font("helvetica", "I", 10)
+    pdf.set_text_color(148, 163, 184)
+    pdf.cell(0, 8, "STRICTLY CONFIDENTIAL", align="C", new_x="LMARGIN", new_y="NEXT")
+    
+    # ---------------- CONTENT PAGE ----------------
     pdf.add_page()
     
     # Report Metadata Block
@@ -784,17 +833,12 @@ def export_scan_pdf(scan_id: int, db: Session = Depends(get_db)):
     pdf.set_draw_color(203, 213, 225) # slate-300
     pdf.set_font("helvetica", "B", 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 10, " Scan Metadata", border=1, align="L", fill=True, new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 10, " Scan Overview", border=1, align="L", fill=True, new_x="LMARGIN", new_y="NEXT")
     
     pdf.set_font("helvetica", "", 11)
     pdf.set_text_color(51, 65, 85)
-    repo_name = scan.repository.name if scan.repository else "Unknown"
-    scan_date = scan.createdAt.strftime("%B %d, %Y - %H:%M:%S UTC") if scan.createdAt else "Unknown"
-    overall_score = scan.repository.score if scan.repository else "N/A"
-    
     pdf.cell(0, 8, f"  Repository: {repo_name}", border="LR", new_x="LMARGIN", new_y="NEXT")
     pdf.cell(0, 8, f"  Scan ID: SCN-{str(scan.id).zfill(4)}", border="LR", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 8, f"  Date: {scan_date}", border="LR", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 8, f"  Overall Health Score: {overall_score}/100", border="LRB", new_x="LMARGIN", new_y="NEXT")
     
@@ -904,6 +948,19 @@ def execute_background_scan(repo_id: int):
         
         db.commit()
         
+        # Broadcast scan completion
+        try:
+            asyncio.run(manager.broadcast({
+                "type": "SCAN_COMPLETED",
+                "repoId": repo.id,
+                "score": repo.score,
+                "status": repo.status,
+                "critical": result['critical'],
+                "high": result['high']
+            }))
+        except Exception as e:
+            print("Failed to broadcast:", e)
+        
         # Create Notification
         new_notif = models.Notification(
             userId=repo.orgId or 1, # default to user 1 for now if no org setup fully links user
@@ -953,6 +1010,16 @@ def execute_background_scan(repo_id: int):
     finally:
         db.close()
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # We don't really expect clients to send messages right now, but we must listen
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 @app.post("/api/scans")
 def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     repo_id = int(payload.get("repoId"))
@@ -962,6 +1029,9 @@ def trigger_scan(payload: dict, background_tasks: BackgroundTasks, db: Session =
     
     repo.isScanning = True
     db.commit()
+    
+    # Broadcast scan start
+    asyncio.run(manager.broadcast({"type": "SCAN_STARTED", "repoId": repo.id}))
     
     background_tasks.add_task(execute_background_scan, repo.id)
     return {"message": "Scan initiated", "repoId": repo.id}
