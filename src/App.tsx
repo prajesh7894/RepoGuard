@@ -147,8 +147,8 @@ function MainApp() {
             {currentView === 'login' && <Login setView={handleSetView} />}
             {currentView === 'register' && <Register setView={handleSetView} />}
             {currentView === 'onboarding' && <Onboarding setView={handleSetView} />}
-            {currentView === 'dashboard' && <Dashboard />}
-            {currentView === 'repositories' && <Repositories />}
+            {currentView === 'dashboard' && <Dashboard setView={handleSetView} />}
+            {currentView === 'repositories' && <Repositories setView={handleSetView} />}
             {currentView === 'new_scan' && <NewScan setView={handleSetView} />}
             {currentView === 'scan_history' && <ScanHistory />}
             {currentView === 'ai_security_review' && <AiSecurityReview />}

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw } from 'lucide-react';
+import { Shield, Radar, AlertTriangle, Puzzle, MoreVertical, FolderCode, TrendingUp, RefreshCw, ScanSearch } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
+import { View } from '../types';
 
-export default function Dashboard() {
+export default function Dashboard({ setView }: { setView?: (view: View) => void }) {
   const [repos, setRepos] = useState<any[]>(() => {
     try {
       const cached = localStorage.getItem('rg_cached_repos');
@@ -151,18 +152,28 @@ export default function Dashboard() {
 
   return (
     <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col">
-      <div className="flex justify-between items-end mb-8 mt-2">
+      <div className="flex flex-wrap gap-4 justify-between items-start sm:items-end mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2 font-bold gradient-text pb-1">Good morning, {userName}.</h2>
           <p className="text-on-surface-variant font-body-lg">Your security posture is looking strong.</p>
         </div>
-        <button 
-          onClick={() => fetchData(true)}
-          className="flex items-center gap-2 bg-surface-variant hover:bg-surface-variant-hover text-on-surface text-sm font-medium py-2 px-4 rounded-md transition-colors"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin text-primary" : ""} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setView && setView('new_scan')}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold py-2 px-4 rounded-md shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+            title="Start New Security Scan"
+          >
+            <ScanSearch size={16} className="shrink-0" />
+            <span>New Scan</span>
+          </button>
+          <button 
+            onClick={() => fetchData(true)}
+            className="flex items-center gap-2 bg-surface-variant hover:bg-surface-variant-hover text-on-surface text-sm font-medium py-2 px-4 rounded-md transition-colors cursor-pointer"
+          >
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin text-primary" : ""} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {repos.length === 0 ? (
@@ -179,12 +190,13 @@ export default function Dashboard() {
           <p className="text-on-surface-variant max-w-lg mb-8 relative z-10">
             Connect your first repository to unlock AI-powered security insights, vulnerability tracking, and compliance reporting.
           </p>
-          <a 
-            href="/repositories" 
-            className="bg-primary-container text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-container/90 transition-all flex items-center gap-2 relative z-10 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5"
+          <button 
+            onClick={() => setView && setView('new_scan')} 
+            className="bg-primary-container text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-container/90 transition-all flex items-center gap-2 relative z-10 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-0.5 cursor-pointer"
           >
-            Connect Repository
-          </a>
+            <ScanSearch size={18} />
+            Start First Scan
+          </button>
         </motion.div>
       ) : (
         <>

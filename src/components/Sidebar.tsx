@@ -63,7 +63,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <LayoutDashboard size={20} />
+              <LayoutDashboard size={20} className="shrink-0" />
               <span className="text-sm text-left truncate">Dashboard</span>
             </button>
           </li>
@@ -76,7 +76,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <FolderGit2 size={20} />
+              <FolderGit2 size={20} className="shrink-0 text-blue-400" />
               <span className="text-sm text-left truncate">Repositories</span>
             </button>
           </li>
@@ -89,8 +89,8 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <ScanSearch size={20} />
-              <span className="text-sm text-left truncate">New Scan</span>
+              <ScanSearch size={20} className="shrink-0 text-emerald-400" />
+              <span className="text-sm text-left truncate font-semibold">New Scan</span>
             </button>
           </li>
           <li>
@@ -102,7 +102,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Activity size={20} />
+              <Activity size={20} className="shrink-0 text-cyan-400" />
               <span className="text-sm text-left truncate">Scan History</span>
             </button>
           </li>
@@ -116,7 +116,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Key size={20} />
+              <Key size={20} className="shrink-0 text-amber-400" />
               <span className="text-sm text-left truncate">Secret Scanner</span>
             </button>
           </li>
@@ -129,7 +129,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Workflow size={20} />
+              <Workflow size={20} className="shrink-0 text-sky-400" />
               <span className="text-sm text-left truncate">Dependency Scanner</span>
             </button>
           </li>
@@ -142,7 +142,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Sparkles size={20} className={currentView === 'ai_security_review' ? "text-secondary" : ""} />
+              <Sparkles size={20} className={`shrink-0 ${currentView === 'ai_security_review' ? "text-secondary" : "text-purple-400"}`} />
               <span className="text-sm text-left truncate">AI Security Review</span>
             </button>
           </li>
@@ -155,7 +155,7 @@ export default function Sidebar({ currentView, setView, isOpen, onClose }: Sideb
                   : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
               }`}
             >
-              <Shield size={20} />
+              <Shield size={20} className="shrink-0 text-indigo-400" />
               <span className="text-sm text-left truncate">Compliance</span>
             </button>
           </li>

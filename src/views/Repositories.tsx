@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Eye, FileCode, Gauge, ChevronDown, Blocks, Clock, MoreVertical, Bug, Key, RefreshCw, Database, FolderGit2 } from 'lucide-react';
+import { Plus, Search, Eye, FileCode, Gauge, ChevronDown, Blocks, Clock, MoreVertical, Bug, Key, RefreshCw, Database, FolderGit2, Radar, ScanSearch } from 'lucide-react';
 import RepoDetailsDrawer from '../components/RepoDetailsDrawer';
 import { useAuth } from '../contexts/AuthContext';
+import { View } from '../types';
 
-export default function Repositories() {
+export default function Repositories({ setView }: { setView?: (view: View) => void }) {
   const [selectedRepo, setSelectedRepo] = useState<any | null>(null);
   const [repos, setRepos] = useState<any[]>(() => {
     try {
@@ -117,25 +118,33 @@ export default function Repositories() {
 
   return (
     <div className="py-6 px-4 md:px-8 w-full h-full flex flex-col max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8 mt-2">
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-8 mt-2">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface font-bold">Repositories</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">Manage and monitor security posture across your connected codebases.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setView && setView('new_scan')} 
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg font-body-sm text-body-sm font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+            title="Start New Security Scan"
+          >
+            <ScanSearch size={18} className="shrink-0" />
+            <span>New Scan</span>
+          </button>
           {!user?.githubLinked && (
             <button 
               onClick={handleSyncGitHub} 
               disabled={syncing}
-              className="flex items-center gap-2 bg-[#2ea043] text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-[#2c974b] transition-colors shadow-lg"
+              className="flex items-center gap-2 bg-[#2ea043] text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-[#2c974b] transition-colors shadow-lg cursor-pointer"
             >
-              {syncing ? <RefreshCw className="animate-spin" size={20} /> : <div className="i-lucide-github" style={{width: 20, height: 20}}></div>}
-              {syncing ? "Syncing..." : "Sync with GitHub"}
+              <RefreshCw className={syncing ? "animate-spin" : ""} size={18} />
+              <span>{syncing ? "Syncing..." : "Sync GitHub"}</span>
             </button>
           )}
-          <button onClick={handleConnectNew} className="flex items-center gap-2 bg-primary-container text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-primary-container/20">
-            <Plus size={20} />
-            Connect New Repo
+          <button onClick={handleConnectNew} className="flex items-center gap-2 bg-primary-container text-white px-5 py-2.5 rounded-lg font-body-sm text-body-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-primary-container/20 cursor-pointer">
+            <Plus size={20} className="shrink-0" />
+            <span>Connect Repo</span>
           </button>
         </div>
       </div>
@@ -290,9 +299,10 @@ export default function Repositories() {
                 <button 
                   onClick={(e) => { e.stopPropagation(); triggerScan(repo.id); }}
                   disabled={repo.isScanning}
-                  className={`px-3 py-1.5 rounded-md bg-primary-container/10 text-primary font-body-sm text-body-sm font-medium hover:bg-primary-container/20 transition-colors ${repo.isScanning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary-container/20 text-primary font-body-sm text-body-sm font-semibold hover:bg-primary-container/30 transition-colors ${repo.isScanning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
-                  Scan Now
+                  {repo.isScanning ? <RefreshCw size={14} className="animate-spin shrink-0" /> : <Radar size={14} className="shrink-0" />}
+                  <span>Scan Now</span>
                 </button>
               </div>
             </div>
