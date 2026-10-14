@@ -103,7 +103,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     if not is_valid:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    expire = datetime.utcnow() + timedelta(days=1)
+    expire = datetime.utcnow() + timedelta(days=30)
     to_encode = {"userId": db_user.id, "exp": expire.timestamp()}
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
     

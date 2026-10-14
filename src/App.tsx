@@ -43,6 +43,19 @@ function MainApp() {
       'reports', 'compliance', 'audit_logs', 'integrations', 'team', 'product', 'solutions', 'pricing', 'docs'
     ];
     if (validViews.includes(path as View)) return path as View;
+
+    // Check if user is already logged in
+    try {
+      const token = localStorage.getItem('token');
+      const lastView = localStorage.getItem('last_view') as View;
+      if (token) {
+        if (lastView && validViews.includes(lastView) && !['landing', 'login', 'register', 'onboarding'].includes(lastView)) {
+          return lastView;
+        }
+        return 'dashboard';
+      }
+    } catch (e) {}
+
     return 'landing';
   };
 
@@ -50,7 +63,16 @@ function MainApp() {
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
+
+  const handleSetView = (view: View) => {
+    setCurrentView(view);
+    try {
+      if (!['landing', 'login', 'register', 'onboarding'].includes(view)) {
+        localStorage.setItem('last_view', view);
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -61,12 +83,10 @@ function MainApp() {
 
   useEffect(() => {
     if (scrollContainerRef.current) {
-      // Ensure DOM has painted the new view before scrolling to top
       setTimeout(() => {
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }, 10);
     }
-    // Close sidebar on navigation on mobile
     setIsSidebarOpen(false);
   }, [currentView]);
 
@@ -76,14 +96,12 @@ function MainApp() {
     const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProto}//${window.location.host}/ws`;
     
-    // Fallback if running via vite dev server proxy, ws might need correct port
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'SCAN_COMPLETED' || data.type === 'SCAN_STARTED') {
-          // Dispatch custom event for views to listen to
           window.dispatchEvent(new CustomEvent('scan_update', { detail: data }));
         }
       } catch (err) {
@@ -96,26 +114,25 @@ function MainApp() {
     };
   }, [user]);
 
-  // Route Guard
+  // Route Guard - Redirects smoothly without infinite loops
   useEffect(() => {
-    if (!isLoading && !user && !['landing', 'login', 'register', 'onboarding'].includes(currentView)) {
+    const publicViews = ['landing', 'login', 'register', 'onboarding', 'product', 'solutions', 'pricing', 'docs'];
+    if (!user && !publicViews.includes(currentView)) {
       setCurrentView('login');
+    } else if (user && (currentView === 'login' || currentView === 'register')) {
+      setCurrentView('dashboard');
     }
-  }, [currentView, user, isLoading]);
-
-  if (isLoading) {
-    return <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground">Loading...</div>;
-  }
+  }, [currentView, user]);
 
   return (
     <div className="h-screen overflow-hidden bg-background flex">
-      {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Sidebar currentView={currentView} setView={setCurrentView} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
+      {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Sidebar currentView={currentView} setView={handleSetView} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
       
       <div 
         ref={scrollContainerRef}
         className={`w-full h-full relative overflow-y-auto overflow-x-hidden ${!['landing', 'login', 'register', 'onboarding'].includes(currentView) ? 'md:pl-[272px]' : ''}`}
       >
-        {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Header onOpenAiAssistant={() => setIsAiAssistantOpen(true)} setView={setCurrentView} onOpenSidebar={() => setIsSidebarOpen(true)} />}
+        {!['landing', 'login', 'register', 'onboarding'].includes(currentView) && <Header onOpenAiAssistant={() => setIsAiAssistantOpen(true)} setView={handleSetView} onOpenSidebar={() => setIsSidebarOpen(true)} />}
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -126,13 +143,13 @@ function MainApp() {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="w-full min-h-full flex flex-col"
           >
-            {currentView === 'landing' && <Landing setView={setCurrentView} />}
-            {currentView === 'login' && <Login setView={setCurrentView} />}
-            {currentView === 'register' && <Register setView={setCurrentView} />}
-            {currentView === 'onboarding' && <Onboarding setView={setCurrentView} />}
+            {currentView === 'landing' && <Landing setView={handleSetView} />}
+            {currentView === 'login' && <Login setView={handleSetView} />}
+            {currentView === 'register' && <Register setView={handleSetView} />}
+            {currentView === 'onboarding' && <Onboarding setView={handleSetView} />}
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'repositories' && <Repositories />}
-            {currentView === 'new_scan' && <NewScan setView={setCurrentView} />}
+            {currentView === 'new_scan' && <NewScan setView={handleSetView} />}
             {currentView === 'scan_history' && <ScanHistory />}
             {currentView === 'ai_security_review' && <AiSecurityReview />}
             {currentView === 'secret_scanner' && <SecretScanner />}

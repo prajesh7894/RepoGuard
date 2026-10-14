@@ -1,12 +1,15 @@
-import { PlayCircle, ArrowRight, Brain, Lock, Key, Network, ShieldCheck, Gavel } from 'lucide-react';
+import { PlayCircle, ArrowRight, Brain, Lock, Key, Network, ShieldCheck, Gavel, LayoutDashboard } from 'lucide-react';
 import { View } from '../types';
 import ShaderBackground from '../components/ShaderBackground';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LandingProps {
   setView: (view: View) => void;
 }
 
 export default function Landing({ setView }: LandingProps) {
+  const { user } = useAuth();
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="fixed top-6 w-full z-50 flex justify-center px-4">
@@ -21,13 +24,24 @@ export default function Landing({ setView }: LandingProps) {
             <button onClick={() => setView('docs')} className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer">Docs</button>
           </nav>
           <div className="flex items-center gap-4">
-            <button onClick={() => setView('login')} className="hidden md:block font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors cursor-pointer">Login</button>
-            <button 
-                onClick={() => setView('login')}
-                className="bg-primary-container text-white px-4 py-1.5 rounded-full font-body-sm text-body-sm hover:bg-primary-container/90 transition-all shadow-lg shadow-primary-container/20 cursor-pointer"
-            >
-              Start Scanning
-            </button>
+            {user ? (
+              <button 
+                  onClick={() => setView('dashboard')}
+                  className="bg-primary-container text-white px-5 py-1.5 rounded-full font-body-sm text-body-sm hover:bg-primary-container/90 transition-all shadow-lg shadow-primary-container/20 cursor-pointer flex items-center gap-2"
+              >
+                <LayoutDashboard size={14} /> Open Dashboard
+              </button>
+            ) : (
+              <>
+                <button onClick={() => setView('login')} className="hidden md:block font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors cursor-pointer">Login</button>
+                <button 
+                    onClick={() => setView('login')}
+                    className="bg-primary-container text-white px-4 py-1.5 rounded-full font-body-sm text-body-sm hover:bg-primary-container/90 transition-all shadow-lg shadow-primary-container/20 cursor-pointer"
+                >
+                  Start Scanning
+                </button>
+              </>
+            )}
           </div>
         </header>
       </div>
@@ -58,12 +72,29 @@ export default function Landing({ setView }: LandingProps) {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button 
-                  onClick={() => setView('login')}
-                  className="bg-primary-container text-white px-8 py-3.5 rounded-full font-body-lg text-body-lg text-center hover:bg-primary-container/90 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] cursor-pointer"
-                >
-                  Start Free Trial
-                </button>
+                {user ? (
+                  <>
+                    <button 
+                      onClick={() => setView('dashboard')}
+                      className="bg-primary-container text-white px-8 py-3.5 rounded-full font-body-lg text-body-lg text-center hover:bg-primary-container/90 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <LayoutDashboard size={18} /> Go to Dashboard
+                    </button>
+                    <button 
+                      onClick={() => setView('new_scan')}
+                      className="bg-white/10 hover:bg-white/15 text-white px-6 py-3.5 rounded-full font-body-lg text-body-lg text-center transition-all cursor-pointer border border-white/10"
+                    >
+                      Start New Scan
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setView('login')}
+                    className="bg-primary-container text-white px-8 py-3.5 rounded-full font-body-lg text-body-lg text-center hover:bg-primary-container/90 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] cursor-pointer"
+                  >
+                    Start Free Trial
+                  </button>
+                )}
               </div>
               
               <div className="flex items-center gap-4 mt-8 text-on-surface-variant font-body-sm text-sm">

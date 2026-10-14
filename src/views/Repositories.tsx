@@ -5,8 +5,15 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Repositories() {
   const [selectedRepo, setSelectedRepo] = useState<any | null>(null);
-  const [repos, setRepos] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [repos, setRepos] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('rg_cached_repos');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return !localStorage.getItem('rg_cached_repos');
+  });
 
   const { token, user } = useAuth();
   const [syncing, setSyncing] = useState(false);
@@ -19,9 +26,13 @@ export default function Repositories() {
       
       if (!res.ok) throw new Error("Failed to fetch repos");
       const data = await res.json();
-      setRepos(Array.isArray(data) ? data : []);
+      const safeData = Array.isArray(data) ? data : [];
+      setRepos(safeData);
+      try {
+        localStorage.setItem('rg_cached_repos', JSON.stringify(safeData));
+      } catch (e) {}
     } catch (error) {
-      console.error('Failed to fetch repos:', error);
+      console.warn('Failed to fetch repos (server waking up):', error);
     } finally {
       setIsLoading(false);
     }

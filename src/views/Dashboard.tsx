@@ -6,11 +6,28 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 
 export default function Dashboard() {
-  const [repos, setRepos] = useState<any[]>([]);
-  const [scans, setScans] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [repos, setRepos] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('rg_cached_repos');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [scans, setScans] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('rg_cached_scans');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [analytics, setAnalytics] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('rg_cached_analytics');
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
   const [days, setDays] = useState(7);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    return !localStorage.getItem('rg_cached_repos');
+  });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -35,14 +52,21 @@ export default function Dashboard() {
       const scansData = await scansRes.json();
       const analyticsData = await analyticsRes.json();
       
-      setRepos(Array.isArray(reposData) ? reposData : []);
-      setScans(Array.isArray(scansData) ? scansData : []);
+      const safeRepos = Array.isArray(reposData) ? reposData : [];
+      const safeScans = Array.isArray(scansData) ? scansData : [];
+      
+      setRepos(safeRepos);
+      setScans(safeScans);
       setAnalytics(analyticsData);
+
+      try {
+        localStorage.setItem('rg_cached_repos', JSON.stringify(safeRepos));
+        localStorage.setItem('rg_cached_scans', JSON.stringify(safeScans));
+        localStorage.setItem('rg_cached_analytics', JSON.stringify(analyticsData));
+      } catch (e) {}
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      setRepos([]);
-      setScans([]);
-      setAnalytics(null);
+      console.warn('Dashboard fetch issue (Render cold start):', error);
+      // Preserve existing cached data on temporary network blips!
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
